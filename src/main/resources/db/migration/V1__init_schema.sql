@@ -37,6 +37,8 @@ CREATE TABLE clinics (
 CREATE TABLE specialties (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
+    clinic_id BIGINT UNSIGNED NOT NULL,
+
     name VARCHAR(150) NOT NULL,
     description TEXT NULL,
 
@@ -46,8 +48,11 @@ CREATE TABLE specialties (
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         ON UPDATE CURRENT_TIMESTAMP,
 
-    CONSTRAINT uq_specialties_name
-        UNIQUE (name)
+    CONSTRAINT fk_specialties_clinic
+        FOREIGN KEY (clinic_id)
+        REFERENCES clinics(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
 
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
