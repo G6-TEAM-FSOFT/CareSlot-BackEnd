@@ -15,8 +15,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-@ToString(exclude = {"user", "appointments"})
-@EqualsAndHashCode(callSuper = true, exclude = {"user", "appointments"})
+@ToString(exclude = { "user", "appointments" })
+@EqualsAndHashCode(callSuper = true, exclude = { "user", "appointments" })
 public class PatientProfile extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
