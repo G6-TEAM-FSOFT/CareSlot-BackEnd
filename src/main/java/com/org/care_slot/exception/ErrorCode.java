@@ -1,0 +1,33 @@
+package com.org.care_slot.exception;
+
+import lombok.Getter;
+import org.springframework.http.HttpStatus;
+
+@Getter
+public enum ErrorCode {
+    UNCATEGORIZED_EXCEPTION(9999, "Uncategorized error", HttpStatus.INTERNAL_SERVER_ERROR),
+    USER_NOT_FOUND(1001, "User not found", HttpStatus.NOT_FOUND),
+    USER_ALREADY_EXISTS(1002, "User already exists with this username or email", HttpStatus.BAD_REQUEST),
+    INVALID_CREDENTIALS(1003, "Invalid username or password", HttpStatus.UNAUTHORIZED),
+    UNAUTHORIZED(1004, "You do not have permission to perform this action", HttpStatus.FORBIDDEN),
+    UNAUTHENTICATED(1005, "Unauthenticated access", HttpStatus.UNAUTHORIZED),
+    CLINIC_NOT_FOUND(2001, "Clinic not found", HttpStatus.NOT_FOUND),
+    DOCTOR_NOT_FOUND(2002, "Doctor not found", HttpStatus.NOT_FOUND),
+    SPECIALTY_NOT_FOUND(2003, "Specialty not found", HttpStatus.NOT_FOUND),
+    SLOT_NOT_FOUND(3001, "Slot not found", HttpStatus.NOT_FOUND),
+    SLOT_NOT_AVAILABLE(3002, "Slot is no longer available", HttpStatus.BAD_REQUEST),
+    SLOT_ALREADY_HELD(3003, "Slot is currently held by another user", HttpStatus.CONFLICT),
+    APPOINTMENT_NOT_FOUND(4001, "Appointment not found", HttpStatus.NOT_FOUND),
+    INVALID_APPOINTMENT_STATUS(4002, "Invalid appointment status transition", HttpStatus.BAD_REQUEST),
+    PAYMENT_FAILED(5001, "Payment processing failed", HttpStatus.PAYMENT_REQUIRED);
+
+    private final int code;
+    private final String message;
+    private final HttpStatus httpStatus;
+
+    ErrorCode(int code, String message, HttpStatus httpStatus) {
+        this.code = code;
+        this.message = message;
+        this.httpStatus = httpStatus;
+    }
+}
