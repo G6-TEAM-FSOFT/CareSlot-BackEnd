@@ -1,7 +1,10 @@
 package com.org.care_slot.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
@@ -13,10 +16,10 @@ import java.time.LocalDateTime;
 public class ApiResponse<T> {
     @Builder.Default
     private int code = 1000;
-    
+
     private String message;
     private T data;
-    
+
     @Builder.Default
     private LocalDateTime timestamp = LocalDateTime.now();
 
