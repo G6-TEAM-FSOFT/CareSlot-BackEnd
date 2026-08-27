@@ -38,25 +38,46 @@ CREATE TABLE specialties
 (
     id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
-    clinic_id   BIGINT UNSIGNED NOT NULL,
-
     name        VARCHAR(150) NOT NULL,
     description TEXT NULL,
 
     status      VARCHAR(30)  NOT NULL DEFAULT 'ACTIVE',
 
     created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
-    CONSTRAINT fk_specialties_clinic
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================
+-- 2.1 CLINIC_SPECIALTIES (Many-to-Many Join Table)
+-- ============================================================
+
+CREATE TABLE clinic_specialties
+(
+    clinic_id    BIGINT UNSIGNED NOT NULL,
+    specialty_id BIGINT UNSIGNED NOT NULL,
+
+    PRIMARY KEY (clinic_id, specialty_id),
+
+    CONSTRAINT fk_clinic_specialties_clinic
         FOREIGN KEY (clinic_id)
             REFERENCES clinics (id)
+            ON UPDATE CASCADE
+            ON DELETE CASCADE,
+
+    CONSTRAINT fk_clinic_specialties_specialty
+        FOREIGN KEY (specialty_id)
+            REFERENCES specialties (id)
             ON UPDATE CASCADE
             ON DELETE CASCADE
 
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
+
 
 
 -- ============================================================

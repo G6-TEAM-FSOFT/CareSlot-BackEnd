@@ -8,6 +8,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "clinics")
 @Getter
@@ -49,8 +52,14 @@ public class Clinic extends BaseEntity {
     @Builder.Default
     private List<User> users = new ArrayList<>();
 
-    @OneToMany(mappedBy = "clinic", cascade = CascadeType.ALL)
+    @ManyToMany
+    @JoinTable(
+            name = "clinic_specialties",
+            joinColumns = @JoinColumn(name = "clinic_id"),
+            inverseJoinColumns = @JoinColumn(name = "specialty_id")
+    )
     @Builder.Default
-    private List<Specialty> specialties = new ArrayList<>();
+    private Set<Specialty> specialties = new HashSet<>();
 }
+
 
