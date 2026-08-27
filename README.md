@@ -1,6 +1,7 @@
 # CareSlot Backend API
 
-CareSlot Backend là dịch vụ API chính cho nền tảng đặt lịch khám bệnh trực tuyến **CareSlot**, cung cấp các tính năng quản lý phòng khám, bác sĩ, khung giờ khám (slots), đặt lịch khám, thanh toán và thông báo tự động.
+CareSlot Backend là dịch vụ API chính cho nền tảng đặt lịch khám bệnh trực tuyến **CareSlot**, cung cấp các tính năng
+quản lý phòng khám, bác sĩ, khung giờ khám (slots), đặt lịch khám, thanh toán và thông báo tự động.
 
 ---
 
@@ -20,6 +21,7 @@ CareSlot Backend là dịch vụ API chính cho nền tảng đặt lịch khám
 ## 🛠️ Yêu Cầu Tiền Đề (Prerequisites)
 
 Trước khi khởi chạy dự án, hãy đảm bảo hệ thống của bạn đã cài đặt các công cụ sau:
+
 - **JDK 21** trở lên
 - **Apache Maven 3.8+** (hoặc sử dụng `mvnw` / `mvnw.cmd` đi kèm)
 - **MySQL 8.0+**
@@ -29,39 +31,45 @@ Trước khi khởi chạy dự án, hãy đảm bảo hệ thống của bạn 
 
 ## ⚙️ Cấu Hình Hệ Thống
 
-Cấu hình mặc định nằm trong file `src/main/resources/application.yaml`. 
+Cấu hình mặc định nằm trong file `src/main/resources/application.yaml`.
 
 ### 1. Cơ sở dữ liệu MySQL
+
 Tạo cơ sở dữ liệu MySQL có tên `careslot_db`:
+
 ```sql
 CREATE DATABASE careslot_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
 ### 2. Biến Môi Trường (Environment Variables)
-Bạn có thể thiết lập các biến môi trường hoặc sử dụng file cấu hình cá nhân `application-local.yaml` (đã được bao gồm trong `.gitignore`):
 
-| Biến môi trường | Mô tả | Mặc định |
-| :--- | :--- | :--- |
-| `SPRING_DATASOURCE_URL` | Chuỗi kết nối JDBC MySQL | `jdbc:mysql://localhost:3306/careslot_db` |
-| `SPRING_DATASOURCE_USERNAME` | Username MySQL | `root` |
-| `SPRING_DATASOURCE_PASSWORD` | Password MySQL | `1234` |
-| `SPRING_REDIS_HOST` | Địa chỉ Host Redis | `localhost` |
-| `SPRING_REDIS_PORT` | Cổng kết nối Redis | `6379` |
-| `MAIL_USERNAME` | Email gửi thông báo | `your-email@gmail.com` |
-| `MAIL_PASSWORD` | App Password của Gmail | `your-app-password` |
-| `JWT_SECRET` | Khóa bí mật cho JWT token | *(Chuỗi Hex 256-bit mặc định)* |
+Bạn có thể thiết lập các biến môi trường hoặc sử dụng file cấu hình cá nhân `application-local.yaml` (đã được bao gồm
+trong `.gitignore`):
+
+| Biến môi trường              | Mô tả                     | Mặc định                                  |
+|:-----------------------------|:--------------------------|:------------------------------------------|
+| `SPRING_DATASOURCE_URL`      | Chuỗi kết nối JDBC MySQL  | `jdbc:mysql://localhost:3306/careslot_db` |
+| `SPRING_DATASOURCE_USERNAME` | Username MySQL            | `root`                                    |
+| `SPRING_DATASOURCE_PASSWORD` | Password MySQL            | `1234`                                    |
+| `SPRING_REDIS_HOST`          | Địa chỉ Host Redis        | `localhost`                               |
+| `SPRING_REDIS_PORT`          | Cổng kết nối Redis        | `6379`                                    |
+| `MAIL_USERNAME`              | Email gửi thông báo       | `your-email@gmail.com`                    |
+| `MAIL_PASSWORD`              | App Password của Gmail    | `your-app-password`                       |
+| `JWT_SECRET`                 | Khóa bí mật cho JWT token | *(Chuỗi Hex 256-bit mặc định)*            |
 
 ---
 
 ## 📦 Hướng Dẫn Chạy Dự Án
 
 ### 1. Clone và cài đặt các phụ thuộc
+
 ```bash
 git clone <repository-url>
 cd BE/care-slot
 ```
 
 ### 2. Kiểm tra & Build dự án
+
 ```bash
 # Trên Windows
 .\mvnw.cmd clean package -DskipTests
@@ -71,6 +79,7 @@ cd BE/care-slot
 ```
 
 ### 3. Khởi chạy ứng dụng
+
 ```bash
 # Chạy trực tiếp qua Maven Wrapper
 .\mvnw.cmd spring-boot:run
@@ -86,6 +95,7 @@ Dịch vụ Backend sẽ chạy tại địa chỉ: `http://localhost:8080/api/v
 ## 📑 Tài Liệu API (Swagger UI)
 
 Khi dự án đã khởi chạy thành công, truy cập tài liệu API trực quan tại:
+
 - **Swagger UI**: [http://localhost:8080/api/v1/swagger-ui.html](http://localhost:8080/api/v1/swagger-ui.html)
 - **OpenAPI JSON**: [http://localhost:8080/api/v1/v3/api-docs](http://localhost:8080/api/v1/v3/api-docs)
 
@@ -119,11 +129,12 @@ care-slot/
 
 ## 🔑 Các Chức Năng Chính (Core Modules)
 
-1. **Authentication & User Management**: Đăng ký, đăng nhập, phân quyền 3 vai trò (`ROLE_ADMIN`, `ROLE_CLINIC`, `ROLE_PATIENT`).
+1. **Authentication & User Management**: Đăng ký, đăng nhập, phân quyền 3 vai trò (`ROLE_ADMIN`, `ROLE_CLINIC`,
+   `ROLE_PATIENT`).
 2. **Quản lý Phòng khám & Bác sĩ**: Quản lý hồ sơ phòng khám, chuyên khoa, lịch làm việc của bác sĩ.
 3. **Quản lý Khung giờ & Đặt lịch (Slot & Appointment)**:
-   - Tạo slot tự động theo ca khám.
-   - Giữ slot tạm thời (Hold slot) phòng tránh đặt trùng lịch.
-   - Tạo cuộc hẹn và chuyển trạng thái lịch khám (`PENDING_PAYMENT` -> `CONFIRMED` -> `CHECKED_IN`).
+    - Tạo slot tự động theo ca khám.
+    - Giữ slot tạm thời (Hold slot) phòng tránh đặt trùng lịch.
+    - Tạo cuộc hẹn và chuyển trạng thái lịch khám (`PENDING_PAYMENT` -> `CONFIRMED` -> `CHECKED_IN`).
 4. **Thanh toán (Payment Gateway)**: Tích hợp cổng thanh toán trực tuyến và ghi nhận lịch sử giao dịch.
 5. **Thông báo qua Email**: Gửi email xác nhận đặt lịch thành công và nhắc nhở lịch khám.

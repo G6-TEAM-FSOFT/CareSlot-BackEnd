@@ -1,16 +1,7 @@
 package com.org.care_slot.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import jakarta.persistence.*;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.util.ArrayList;
@@ -23,11 +14,15 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-@ToString(exclude = "doctors")
-@EqualsAndHashCode(callSuper = true, exclude = "doctors")
+@ToString(exclude = {"clinic", "doctors"})
+@EqualsAndHashCode(callSuper = true, exclude = {"clinic", "doctors"})
 public class Specialty extends BaseEntity {
 
-    @Column(name = "name", nullable = false, unique = true, length = 150)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "clinic_id", nullable = false)
+    private Clinic clinic;
+
+    @Column(name = "name", nullable = false, length = 150)
     private String name;
 
     @Column(name = "description", columnDefinition = "TEXT")
@@ -41,3 +36,4 @@ public class Specialty extends BaseEntity {
     @Builder.Default
     private List<Doctor> doctors = new ArrayList<>();
 }
+

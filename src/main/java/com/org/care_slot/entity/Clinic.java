@@ -1,17 +1,7 @@
 package com.org.care_slot.entity;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import jakarta.persistence.*;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
@@ -25,8 +15,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-@ToString(exclude = {"doctors", "users"})
-@EqualsAndHashCode(callSuper = true, exclude = {"doctors", "users"})
+@ToString(exclude = {"doctors", "users", "specialties"})
+@EqualsAndHashCode(callSuper = true, exclude = {"doctors", "users", "specialties"})
 public class Clinic extends BaseEntity {
 
     @Column(name = "name", nullable = false, length = 255)
@@ -58,4 +48,9 @@ public class Clinic extends BaseEntity {
     @OneToMany(mappedBy = "clinic")
     @Builder.Default
     private List<User> users = new ArrayList<>();
+
+    @OneToMany(mappedBy = "clinic", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<Specialty> specialties = new ArrayList<>();
 }
+
