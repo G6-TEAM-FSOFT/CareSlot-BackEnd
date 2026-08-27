@@ -8,12 +8,8 @@ import java.util.List;
 
 public interface PatientProfileService {
     List<PatientProfileResponse> getPatientProfiles(Long userId, String keyword);
-
     PatientProfileResponse getPatientProfileDetail(Long id, Long userId);
-
     PatientProfileResponse createPatientProfile(Long userId, PatientProfileCreateRequest request);
-
     PatientProfileResponse updatePatientProfile(Long id, Long userId, PatientProfileUpdateRequest request);
-
     void deletePatientProfile(Long id, Long userId);
 }

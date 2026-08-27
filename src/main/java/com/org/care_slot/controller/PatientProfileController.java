@@ -20,13 +20,13 @@ public class PatientProfileController {
 
     private final PatientProfileService patientProfileService;
 
-    // Temporary fallback User ID for testing/demo until SecurityContext is fully
-    // wired
+    // Temporary fallback User ID for testing/demo until SecurityContext is fully wired
     private final Long MOCK_USER_ID = 3L;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<PatientProfileResponse>>> getPatientProfiles(
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword
+    ) {
         List<PatientProfileResponse> result = patientProfileService.getPatientProfiles(MOCK_USER_ID, keyword);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
@@ -39,16 +39,17 @@ public class PatientProfileController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<PatientProfileResponse>> createPatientProfile(
-            @Valid @RequestBody PatientProfileCreateRequest request) {
+            @Valid @RequestBody PatientProfileCreateRequest request
+    ) {
         PatientProfileResponse result = patientProfileService.createPatientProfile(MOCK_USER_ID, request);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Created patient profile successfully", result));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Created patient profile successfully", result));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<PatientProfileResponse>> updatePatientProfile(
             @PathVariable Long id,
-            @Valid @RequestBody PatientProfileUpdateRequest request) {
+            @Valid @RequestBody PatientProfileUpdateRequest request
+    ) {
         PatientProfileResponse result = patientProfileService.updatePatientProfile(id, MOCK_USER_ID, request);
         return ResponseEntity.ok(ApiResponse.success("Updated patient profile successfully", result));
     }

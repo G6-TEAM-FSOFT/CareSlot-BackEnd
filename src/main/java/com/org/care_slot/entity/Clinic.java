@@ -18,8 +18,8 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-@ToString(exclude = { "doctors", "users", "specialties" })
-@EqualsAndHashCode(callSuper = true, exclude = { "doctors", "users", "specialties" })
+@ToString(exclude = {"doctors", "users", "specialties"})
+@EqualsAndHashCode(callSuper = true, exclude = {"doctors", "users", "specialties"})
 public class Clinic extends BaseEntity {
 
     @Column(name = "name", nullable = false, length = 255)
@@ -53,7 +53,13 @@ public class Clinic extends BaseEntity {
     private List<User> users = new ArrayList<>();
 
     @ManyToMany
-    @JoinTable(name = "clinic_specialties", joinColumns = @JoinColumn(name = "clinic_id"), inverseJoinColumns = @JoinColumn(name = "specialty_id"))
+    @JoinTable(
+            name = "clinic_specialties",
+            joinColumns = @JoinColumn(name = "clinic_id"),
+            inverseJoinColumns = @JoinColumn(name = "specialty_id")
+    )
     @Builder.Default
     private Set<Specialty> specialties = new HashSet<>();
 }
+
+

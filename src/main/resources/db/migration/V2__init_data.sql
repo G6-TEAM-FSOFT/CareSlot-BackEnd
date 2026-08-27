@@ -58,25 +58,36 @@ VALUES (1,
 -- ============================================================
 
 INSERT INTO specialties (id,
-                         clinic_id,
                          name,
                          description,
                          status)
 VALUES (1,
-        1,
         'Hỗ trợ sinh sản',
         'Khám, tư vấn và điều trị trong lĩnh vực hỗ trợ sinh sản.',
         'ACTIVE'),
        (2,
-        1,
         'Nam học và Y học Giới tính',
         'Khám, tư vấn và điều trị các vấn đề thuộc Nam học và Y học giới tính.',
         'ACTIVE'),
        (3,
-        1,
         'Chẩn đoán hình ảnh và Can thiệp điện quang',
         'Chẩn đoán bệnh lý bằng các phương pháp hình ảnh và thực hiện các kỹ thuật can thiệp điện quang.',
         'ACTIVE');
+
+
+-- ============================================================
+-- 2.1 CLINIC_SPECIALTIES (Mapping Clinics <-> Specialties)
+-- ============================================================
+
+INSERT INTO clinic_specialties (clinic_id, specialty_id)
+VALUES (1, 1),
+       (1, 2),
+       (1, 3),
+       (2, 1),
+       (2, 3),
+       (3, 2),
+       (3, 3);
+
 
 
 -- ============================================================

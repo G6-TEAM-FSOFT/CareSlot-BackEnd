@@ -7,6 +7,9 @@ import lombok.experimental.SuperBuilder;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "specialties")
 @Getter
@@ -14,13 +17,13 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-@ToString(exclude = {"clinic", "doctors"})
-@EqualsAndHashCode(callSuper = true, exclude = {"clinic", "doctors"})
+@ToString(exclude = {"clinics", "doctors"})
+@EqualsAndHashCode(callSuper = true, exclude = {"clinics", "doctors"})
 public class Specialty extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "clinic_id", nullable = false)
-    private Clinic clinic;
+    @ManyToMany(mappedBy = "specialties")
+    @Builder.Default
+    private Set<Clinic> clinics = new HashSet<>();
 
     @Column(name = "name", nullable = false, length = 150)
     private String name;
@@ -36,4 +39,5 @@ public class Specialty extends BaseEntity {
     @Builder.Default
     private List<Doctor> doctors = new ArrayList<>();
 }
+
 

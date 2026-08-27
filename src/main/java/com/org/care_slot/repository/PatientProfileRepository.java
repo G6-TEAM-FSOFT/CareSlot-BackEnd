@@ -13,9 +13,9 @@ import java.util.Optional;
 public interface PatientProfileRepository extends JpaRepository<PatientProfile, Long> {
 
     @Query("SELECT p FROM PatientProfile p WHERE " +
-            "p.user.id = :userId AND " +
-            "(:keyword IS NULL OR LOWER(p.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
-            "p.status = 'ACTIVE'")
+           "p.user.id = :userId AND " +
+           "(:keyword IS NULL OR LOWER(p.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "p.status = 'ACTIVE'")
     List<PatientProfile> findByUserIdAndKeyword(@Param("userId") Long userId, @Param("keyword") String keyword);
 
     Optional<PatientProfile> findByIdAndUserIdAndStatus(Long id, Long userId, String status);
