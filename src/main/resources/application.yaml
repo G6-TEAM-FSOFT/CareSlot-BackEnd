@@ -8,9 +8,9 @@ spring:
     name: care-slot-backend
 
   datasource:
-    url: jdbc:mysql://localhost:3306/careslot_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/careslot_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: 1234
+    password: meomeo5104
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -26,12 +26,6 @@ spring:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
-
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      timeout: 6000ms
 
   mail:
     host: smtp.gmail.com
