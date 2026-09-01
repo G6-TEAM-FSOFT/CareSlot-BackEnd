@@ -1,6 +1,7 @@
 package com.org.care_slot.repository;
 
 import com.org.care_slot.entity.PatientProfile;
+import com.org.care_slot.enums.ProfileType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,4 +20,8 @@ public interface PatientProfileRepository extends JpaRepository<PatientProfile, 
     List<PatientProfile> findByUserIdAndKeyword(@Param("userId") Long userId, @Param("keyword") String keyword);
 
     Optional<PatientProfile> findByIdAndUserIdAndStatus(Long id, Long userId, String status);
+
+    Optional<PatientProfile> findByUserIdAndProfileTypeAndStatus(Long userId, ProfileType profileType, String status);
+
+    Optional<PatientProfile> findByUserIdAndProfileType(Long userId, ProfileType profileType);
 }
