@@ -3,11 +3,14 @@ package com.org.care_slot.controller;
 import com.org.care_slot.dto.request.ClinicUpdateRequest;
 import com.org.care_slot.dto.response.ApiResponse;
 import com.org.care_slot.dto.response.ClinicDetailResponse;
+import com.org.care_slot.dto.response.SpecialtyResponse;
 import com.org.care_slot.service.ClinicService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/partner/clinic")
@@ -51,5 +54,34 @@ public class PartnerClinicController {
         Long staffClinicId = getEffectiveClinicId(headerClinicId);
         ClinicDetailResponse result = clinicService.updateClinic(id, request, staffClinicId);
         return ResponseEntity.ok(ApiResponse.success("Updated clinic information successfully", result));
+    }
+
+    @GetMapping("/specialties")
+    public ResponseEntity<ApiResponse<List<SpecialtyResponse>>> getMyClinicSpecialties(
+            @RequestHeader(value = "X-Clinic-Id", required = false) Long headerClinicId
+    ) {
+        Long clinicId = getEffectiveClinicId(headerClinicId);
+        List<SpecialtyResponse> result = clinicService.getClinicSpecialties(clinicId, clinicId);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @PostMapping("/specialties/{specialtyId}")
+    public ResponseEntity<ApiResponse<ClinicDetailResponse>> addSpecialtyToMyClinic(
+            @PathVariable Long specialtyId,
+            @RequestHeader(value = "X-Clinic-Id", required = false) Long headerClinicId
+    ) {
+        Long clinicId = getEffectiveClinicId(headerClinicId);
+        ClinicDetailResponse result = clinicService.addSpecialtyToClinic(clinicId, specialtyId, clinicId);
+        return ResponseEntity.ok(ApiResponse.success("Added specialty to clinic successfully", result));
+    }
+
+    @DeleteMapping("/specialties/{specialtyId}")
+    public ResponseEntity<ApiResponse<ClinicDetailResponse>> removeSpecialtyFromMyClinic(
+            @PathVariable Long specialtyId,
+            @RequestHeader(value = "X-Clinic-Id", required = false) Long headerClinicId
+    ) {
+        Long clinicId = getEffectiveClinicId(headerClinicId);
+        ClinicDetailResponse result = clinicService.removeSpecialtyFromClinic(clinicId, specialtyId, clinicId);
+        return ResponseEntity.ok(ApiResponse.success("Removed specialty from clinic successfully", result));
     }
 }
