@@ -44,8 +44,7 @@ public interface AppointmentSlotRepository extends JpaRepository<AppointmentSlot
 
     @Query("SELECT COUNT(s) > 0 FROM AppointmentSlot s WHERE s.doctor.id = :doctorId " +
            "AND s.appointmentDate = :date " +
-           "AND ((s.startTime < :endTime AND s.endTime > :startTime)) " +
-           "AND s.status != com.org.care_slot.enums.SlotStatus.CANCELLED")
+           "AND s.startTime < :endTime AND s.endTime > :startTime")
     boolean existsOverlappingSlot(@Param("doctorId") Long doctorId,
                                   @Param("date") LocalDate date,
                                   @Param("startTime") LocalTime startTime,

@@ -23,7 +23,9 @@ public class ExcelHelper {
     public static boolean hasExcelFormat(MultipartFile file) {
         if (file == null) return false;
         String filename = file.getOriginalFilename();
-        return filename != null && (filename.endsWith(".xlsx") || filename.endsWith(".xls"));
+        if (filename == null) return false;
+        String lower = filename.toLowerCase();
+        return lower.endsWith(".xlsx") || lower.endsWith(".xls");
     }
 
     public static List<SlotCreateRequest> excelToSlotRequests(InputStream is) {
@@ -81,6 +83,8 @@ public class ExcelHelper {
 
             workbook.close();
             return requests;
+        } catch (AppException ae) {
+            throw ae;
         } catch (Exception e) {
             throw new AppException(ErrorCode.INVALID_EXCEL_FILE);
         }
@@ -97,15 +101,19 @@ public class ExcelHelper {
     }
 
     private static Long parseLongCell(Cell cell) {
+        if (cell == null) return null;
         if (cell.getCellType() == CellType.NUMERIC) {
             return (long) cell.getNumericCellValue();
         } else if (cell.getCellType() == CellType.STRING) {
-            return Long.parseLong(cell.getStringCellValue().trim());
+            String text = cell.getStringCellValue().trim();
+            if (text.isEmpty()) return null;
+            return Long.parseLong(text);
         }
         return null;
     }
 
     private static String parseStringCell(Cell cell) {
+        if (cell == null) return null;
         if (cell.getCellType() == CellType.STRING) {
             return cell.getStringCellValue().trim();
         } else if (cell.getCellType() == CellType.NUMERIC) {
@@ -115,20 +123,24 @@ public class ExcelHelper {
     }
 
     private static LocalDate parseDateCell(Cell cell) {
-        if (DateUtil.isCellDateFormatted(cell)) {
+        if (cell == null) return null;
+        if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
             return cell.getLocalDateTimeCellValue().toLocalDate();
         } else if (cell.getCellType() == CellType.STRING) {
             String text = cell.getStringCellValue().trim();
+            if (text.isEmpty()) return null;
             return LocalDate.parse(text, DATE_FORMATTER);
         }
         return null;
     }
 
     private static LocalTime parseTimeCell(Cell cell) {
-        if (DateUtil.isCellDateFormatted(cell)) {
+        if (cell == null) return null;
+        if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
             return cell.getLocalDateTimeCellValue().toLocalTime();
         } else if (cell.getCellType() == CellType.STRING) {
             String text = cell.getStringCellValue().trim();
+            if (text.isEmpty()) return null;
             if (text.length() == 5) { // e.g. "08:00"
                 return LocalTime.parse(text, TIME_FORMATTER);
             } else if (text.length() == 8) { // e.g. "08:00:00"

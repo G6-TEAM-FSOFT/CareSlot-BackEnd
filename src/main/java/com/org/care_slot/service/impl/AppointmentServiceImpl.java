@@ -15,6 +15,7 @@ import com.org.care_slot.repository.AppointmentRepository;
 import com.org.care_slot.repository.AppointmentSlotRepository;
 import com.org.care_slot.repository.PatientProfileRepository;
 import com.org.care_slot.service.AppointmentService;
+import com.org.care_slot.service.BookingLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -35,6 +37,9 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final AppointmentSlotRepository appointmentSlotRepository;
     private final PatientProfileRepository patientProfileRepository;
+    private final BookingLogService bookingLogService;
+
+    private static final BigDecimal DEFAULT_DEPOSIT_AMOUNT = new BigDecimal("100000.00");
 
     @Override
     public AppointmentResponse createAppointment(Long userId, AppointmentCreateRequest request) {
@@ -53,7 +58,12 @@ public class AppointmentServiceImpl implements AppointmentService {
         appointmentSlotRepository.save(slot);
 
         BigDecimal consultationFee = slot.getDoctor() != null ? slot.getDoctor().getConsultationFee() : BigDecimal.ZERO;
-        BigDecimal depositAmount = request.getDepositAmount() != null ? request.getDepositAmount() : BigDecimal.ZERO;
+
+        // US-11: Default deposit is 100,000 VNĐ if not provided or 0
+        BigDecimal depositAmount = request.getDepositAmount();
+        if (depositAmount == null || depositAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            depositAmount = DEFAULT_DEPOSIT_AMOUNT;
+        }
 
         String bookingCode = generateBookingCode();
 
@@ -68,6 +78,10 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .build();
 
         Appointment saved = appointmentRepository.save(appointment);
+
+        // US-24: Log appointment lifecycle event
+        bookingLogService.logEvent(saved, null, saved.getStatus().name(), "APPOINTMENT_CONFIRMED", "Booking created and confirmed", "PATIENT");
+
         return mapToResponse(saved);
     }
 
@@ -128,6 +142,7 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new AppException(ErrorCode.INVALID_APPOINTMENT_STATUS);
         }
 
+        String previousStatus = appointment.getStatus().name();
         appointment.setStatus(AppointmentStatus.CANCELLED);
         appointment.setCancelledAt(LocalDateTime.now());
 
@@ -139,7 +154,52 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
 
         Appointment updated = appointmentRepository.save(appointment);
+
+        // US-24: Log appointment cancellation
+        bookingLogService.logEvent(updated, previousStatus, "CANCELLED", "APPOINTMENT_CANCELLED", request != null ? request.getReason() : "Cancelled by patient", "PATIENT");
+
         return mapToResponse(updated);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<AppointmentResponse> getClinicAppointments(Long clinicId, AppointmentStatus status, Long doctorId, LocalDate date, Pageable pageable, Long staffClinicId) {
+        if (staffClinicId == null || !staffClinicId.equals(clinicId)) {
+            throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
+        }
+
+        Page<Appointment> page = appointmentRepository.findClinicAppointments(clinicId, status, doctorId, date, pageable);
+        List<AppointmentResponse> content = page.getContent().stream()
+                .map(this::mapToResponse)
+                .toList();
+
+        return PageResponse.<AppointmentResponse>builder()
+                .content(content)
+                .page(page.getNumber())
+                .size(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .last(page.isLast())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AppointmentResponse getPartnerAppointmentDetail(Long clinicId, Long appointmentId, Long staffClinicId) {
+        if (staffClinicId == null || !staffClinicId.equals(clinicId)) {
+            throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
+        }
+
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new AppException(ErrorCode.APPOINTMENT_NOT_FOUND));
+
+        if (appointment.getSlot() == null || appointment.getSlot().getDoctor() == null ||
+            appointment.getSlot().getDoctor().getClinic() == null ||
+            !appointment.getSlot().getDoctor().getClinic().getId().equals(clinicId)) {
+            throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
+        }
+
+        return mapToResponse(appointment);
     }
 
     private String generateBookingCode() {

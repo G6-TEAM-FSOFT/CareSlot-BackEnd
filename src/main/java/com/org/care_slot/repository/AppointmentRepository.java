@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Repository
@@ -22,4 +23,16 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     Page<Appointment> findByUserIdAndStatus(@Param("userId") Long userId,
                                             @Param("status") AppointmentStatus status,
                                             Pageable pageable);
+
+    @Query("SELECT a FROM Appointment a WHERE " +
+           "a.slot.doctor.clinic.id = :clinicId AND " +
+           "(:status IS NULL OR a.status = :status) AND " +
+           "(:doctorId IS NULL OR a.slot.doctor.id = :doctorId) AND " +
+           "(:date IS NULL OR a.slot.appointmentDate = :date) " +
+           "ORDER BY a.createdAt DESC")
+    Page<Appointment> findClinicAppointments(@Param("clinicId") Long clinicId,
+                                             @Param("status") AppointmentStatus status,
+                                             @Param("doctorId") Long doctorId,
+                                             @Param("date") LocalDate date,
+                                             Pageable pageable);
 }
