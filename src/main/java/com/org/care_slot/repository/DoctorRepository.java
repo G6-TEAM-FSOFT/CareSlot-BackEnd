@@ -28,4 +28,14 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
                                Pageable pageable);
 
     Page<Doctor> findBySpecialtyIdAndStatus(Long specialtyId, String status, Pageable pageable);
+
+    @Query("SELECT d FROM Doctor d WHERE d.clinic.id = :clinicId AND " +
+           "(:specialtyId IS NULL OR d.specialty.id = :specialtyId) AND " +
+           "(:keyword IS NULL OR LOWER(d.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(d.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "(:status IS NULL OR d.status = :status)")
+    Page<Doctor> findPartnerDoctors(@Param("clinicId") Long clinicId,
+                                    @Param("specialtyId") Long specialtyId,
+                                    @Param("keyword") String keyword,
+                                    @Param("status") String status,
+                                    Pageable pageable);
 }
