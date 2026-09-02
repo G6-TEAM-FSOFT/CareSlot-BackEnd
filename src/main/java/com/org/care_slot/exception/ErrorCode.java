@@ -13,6 +13,7 @@ public enum ErrorCode {
     UNAUTHENTICATED(1005, "Unauthenticated access", HttpStatus.UNAUTHORIZED),
     PATIENT_PROFILE_NOT_FOUND(1006, "Patient profile not found", HttpStatus.NOT_FOUND),
     CLINIC_NOT_FOUND(2001, "Clinic not found", HttpStatus.NOT_FOUND),
+    FORBIDDEN_CLINIC_ACCESS(2004, "You do not have permission to manage this clinic", HttpStatus.FORBIDDEN),
     DOCTOR_NOT_FOUND(2002, "Doctor not found", HttpStatus.NOT_FOUND),
     SPECIALTY_NOT_FOUND(2003, "Specialty not found", HttpStatus.NOT_FOUND),
     SLOT_NOT_FOUND(3001, "Slot not found", HttpStatus.NOT_FOUND),

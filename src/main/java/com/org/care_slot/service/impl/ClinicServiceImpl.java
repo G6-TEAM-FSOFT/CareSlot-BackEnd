@@ -1,5 +1,6 @@
 package com.org.care_slot.service.impl;
 
+import com.org.care_slot.dto.request.ClinicUpdateRequest;
 import com.org.care_slot.dto.response.ClinicDetailResponse;
 import com.org.care_slot.dto.response.ClinicResponse;
 import com.org.care_slot.dto.response.PageResponse;
@@ -68,6 +69,38 @@ public class ClinicServiceImpl implements ClinicService {
                 .status(clinic.getStatus())
                 .specialties(specialties)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public ClinicDetailResponse updateClinic(Long clinicId, ClinicUpdateRequest request, Long staffClinicId) {
+        if (staffClinicId == null || !staffClinicId.equals(clinicId)) {
+            throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
+        }
+
+        Clinic clinic = clinicRepository.findById(clinicId)
+                .orElseThrow(() -> new AppException(ErrorCode.CLINIC_NOT_FOUND));
+
+        clinic.setName(request.getName());
+        clinic.setAddress(request.getAddress());
+        if (request.getLatitude() != null) {
+            clinic.setLatitude(request.getLatitude());
+        }
+        if (request.getLongitude() != null) {
+            clinic.setLongitude(request.getLongitude());
+        }
+        if (request.getPhone() != null) {
+            clinic.setPhone(request.getPhone());
+        }
+        if (request.getDescription() != null) {
+            clinic.setDescription(request.getDescription());
+        }
+        if (request.getStatus() != null) {
+            clinic.setStatus(request.getStatus());
+        }
+
+        Clinic updated = clinicRepository.save(clinic);
+        return getClinicDetail(updated.getId());
     }
 
     private ClinicResponse mapToClinicResponse(Clinic clinic) {
