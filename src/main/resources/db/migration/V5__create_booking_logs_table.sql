@@ -1,5 +1,5 @@
 -- ============================================================
--- V3__create_booking_logs_table.sql
+-- V5__create_booking_logs_table.sql
 -- CareSlot Booking Lifecycle Audit Logs
 -- ============================================================
 

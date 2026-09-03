@@ -18,21 +18,23 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     Optional<Appointment> findByBookingCode(String bookingCode);
 
     @Query("SELECT a FROM Appointment a WHERE " +
-           "a.patientProfile.user.id = :userId AND " +
-           "(:status IS NULL OR a.status = :status)")
+            "a.patientProfile.user.id = :userId AND " +
+            "(:status IS NULL OR a.status = :status)")
     Page<Appointment> findByUserIdAndStatus(@Param("userId") Long userId,
-                                            @Param("status") AppointmentStatus status,
-                                            Pageable pageable);
+            @Param("status") AppointmentStatus status,
+            Pageable pageable);
 
     @Query("SELECT a FROM Appointment a WHERE " +
-           "a.slot.doctor.clinic.id = :clinicId AND " +
-           "(:status IS NULL OR a.status = :status) AND " +
-           "(:doctorId IS NULL OR a.slot.doctor.id = :doctorId) AND " +
-           "(:date IS NULL OR a.slot.appointmentDate = :date) " +
-           "ORDER BY a.createdAt DESC")
+            "a.slot.doctor.clinic.id = :clinicId AND " +
+            "(:status IS NULL OR a.status = :status) AND " +
+            "(:doctorId IS NULL OR a.slot.doctor.id = :doctorId) AND " +
+            "(:date IS NULL OR a.slot.appointmentDate = :date) " +
+            "ORDER BY a.createdAt DESC")
     Page<Appointment> findClinicAppointments(@Param("clinicId") Long clinicId,
-                                             @Param("status") AppointmentStatus status,
-                                             @Param("doctorId") Long doctorId,
-                                             @Param("date") LocalDate date,
-                                             Pageable pageable);
+            @Param("status") AppointmentStatus status,
+            @Param("doctorId") Long doctorId,
+            @Param("date") LocalDate date,
+            Pageable pageable);
+
+    Optional<Appointment> findBySlotIdAndStatus(Long slotId, AppointmentStatus status);
 }

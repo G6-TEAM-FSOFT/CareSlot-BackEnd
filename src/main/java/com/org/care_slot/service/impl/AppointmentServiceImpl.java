@@ -41,9 +41,13 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private static final BigDecimal DEFAULT_DEPOSIT_AMOUNT = new BigDecimal("100000.00");
 
+    @org.springframework.beans.factory.annotation.Value("${vnpay.hold-timeout-minutes:10}")
+    private long holdTimeoutMinutes;
+
     @Override
     public AppointmentResponse createAppointment(Long userId, AppointmentCreateRequest request) {
-        PatientProfile patientProfile = patientProfileRepository.findByIdAndUserIdAndStatus(request.getPatientProfileId(), userId, "ACTIVE")
+        PatientProfile patientProfile = patientProfileRepository
+                .findByIdAndUserIdAndStatus(request.getPatientProfileId(), userId, "ACTIVE")
                 .orElseThrow(() -> new AppException(ErrorCode.PATIENT_PROFILE_NOT_FOUND));
 
         AppointmentSlot slot = appointmentSlotRepository.findById(request.getSlotId())
@@ -53,8 +57,11 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new AppException(ErrorCode.SLOT_NOT_AVAILABLE);
         }
 
-        // Lock slot as BOOKED
-        slot.setStatus(SlotStatus.BOOKED);
+        // Tạm giữ slot theo số phút cấu hình trong yaml
+        LocalDateTime now = LocalDateTime.now();
+        slot.setStatus(SlotStatus.HELD);
+        slot.setHeldAt(now);
+        slot.setHoldExpiresAt(now.plusMinutes(holdTimeoutMinutes));
         appointmentSlotRepository.save(slot);
 
         BigDecimal consultationFee = slot.getDoctor() != null ? slot.getDoctor().getConsultationFee() : BigDecimal.ZERO;
@@ -67,6 +74,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         String bookingCode = generateBookingCode();
 
+        // Tạo Appointment ở trạng thái PENDING_PAYMENT để chờ thanh toán tiền cọc
         Appointment appointment = Appointment.builder()
                 .bookingCode(bookingCode)
                 .patientProfile(patientProfile)
@@ -74,7 +82,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .symptomNote(request.getSymptomNote())
                 .consultationFee(consultationFee)
                 .depositAmount(depositAmount)
-                .status(AppointmentStatus.CONFIRMED)
+                .status(AppointmentStatus.PENDING_PAYMENT)
                 .build();
 
         Appointment saved = appointmentRepository.save(appointment);
@@ -87,7 +95,8 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<AppointmentResponse> getUserAppointments(Long userId, AppointmentStatus status, Pageable pageable) {
+    public PageResponse<AppointmentResponse> getUserAppointments(Long userId, AppointmentStatus status,
+            Pageable pageable) {
         Page<Appointment> page = appointmentRepository.findByUserIdAndStatus(userId, status, pageable);
         List<AppointmentResponse> content = page.getContent().stream()
                 .map(this::mapToResponse)
@@ -219,8 +228,12 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .patientName(profile != null ? profile.getFullName() : null)
                 .doctorId(slot != null && slot.getDoctor() != null ? slot.getDoctor().getId() : null)
                 .doctorName(slot != null && slot.getDoctor() != null ? slot.getDoctor().getFullName() : null)
-                .clinicName(slot != null && slot.getDoctor() != null && slot.getDoctor().getClinic() != null ? slot.getDoctor().getClinic().getName() : null)
-                .specialtyName(slot != null && slot.getDoctor() != null && slot.getDoctor().getSpecialty() != null ? slot.getDoctor().getSpecialty().getName() : null)
+                .clinicName(slot != null && slot.getDoctor() != null && slot.getDoctor().getClinic() != null
+                        ? slot.getDoctor().getClinic().getName()
+                        : null)
+                .specialtyName(slot != null && slot.getDoctor() != null && slot.getDoctor().getSpecialty() != null
+                        ? slot.getDoctor().getSpecialty().getName()
+                        : null)
                 .slotId(slot != null ? slot.getId() : null)
                 .appointmentDate(slot != null ? slot.getAppointmentDate() : null)
                 .startTime(slot != null ? slot.getStartTime() : null)

@@ -1,5 +1,5 @@
 -- ============================================================
--- Migration V3: Add profile_type and enforce at most 1 PRIMARY profile per User
+-- Migration V4: Add profile_type and enforce at most 1 PRIMARY profile per User
 -- ============================================================
 
 -- 1. Add column profile_type

@@ -6,6 +6,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +42,12 @@ public class AppointmentSlot extends BaseEntity {
     @Column(name = "status", nullable = false, length = 30)
     @Builder.Default
     private SlotStatus status = SlotStatus.AVAILABLE;
+
+    @Column(name = "held_at")
+    private LocalDateTime heldAt;
+
+    @Column(name = "hold_expires_at")
+    private LocalDateTime holdExpiresAt;
 
     @OneToMany(mappedBy = "slot")
     @Builder.Default

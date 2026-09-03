@@ -25,7 +25,9 @@ public enum ErrorCode {
     APPOINTMENT_NOT_FOUND(4001, "Appointment not found", HttpStatus.NOT_FOUND),
     INVALID_APPOINTMENT_STATUS(4002, "Invalid appointment status transition", HttpStatus.BAD_REQUEST),
     PAYMENT_FAILED(5001, "Payment processing failed", HttpStatus.PAYMENT_REQUIRED),
-    INVALID_EXCEL_FILE(6001, "Invalid Excel file format or data", HttpStatus.BAD_REQUEST);
+    INVALID_EXCEL_FILE(6001, "Invalid Excel file format or data", HttpStatus.BAD_REQUEST),
+    INVALID_PAYMENT_SIGNATURE(5002, "Invalid payment signature", HttpStatus.BAD_REQUEST),
+    TRANSACTION_NOT_FOUND(5003, "Payment transaction not found", HttpStatus.NOT_FOUND);
 
     private final int code;
     private final String message;
