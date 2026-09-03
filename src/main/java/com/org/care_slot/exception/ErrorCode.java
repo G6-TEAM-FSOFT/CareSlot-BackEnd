@@ -20,7 +20,9 @@ public enum ErrorCode {
     SLOT_ALREADY_HELD(3003, "Slot is currently held by another user", HttpStatus.CONFLICT),
     APPOINTMENT_NOT_FOUND(4001, "Appointment not found", HttpStatus.NOT_FOUND),
     INVALID_APPOINTMENT_STATUS(4002, "Invalid appointment status transition", HttpStatus.BAD_REQUEST),
-    PAYMENT_FAILED(5001, "Payment processing failed", HttpStatus.PAYMENT_REQUIRED);
+    PAYMENT_FAILED(5001, "Payment processing failed", HttpStatus.PAYMENT_REQUIRED),
+    INVALID_PAYMENT_SIGNATURE(5002, "Invalid payment signature", HttpStatus.BAD_REQUEST),
+    TRANSACTION_NOT_FOUND(5003, "Payment transaction not found", HttpStatus.NOT_FOUND);
 
     private final int code;
     private final String message;

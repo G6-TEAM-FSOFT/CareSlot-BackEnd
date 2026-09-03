@@ -25,4 +25,6 @@ public interface AppointmentSlotRepository extends JpaRepository<AppointmentSlot
                                           @Param("fromDate") LocalDate fromDate,
                                           @Param("toDate") LocalDate toDate,
                                           @Param("status") SlotStatus status);
+
+    List<AppointmentSlot> findByStatusAndHoldExpiresAtBefore(SlotStatus status, java.time.LocalDateTime dateTime);
 }
