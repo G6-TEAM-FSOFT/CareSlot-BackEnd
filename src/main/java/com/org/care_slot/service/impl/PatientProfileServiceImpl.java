@@ -2,9 +2,11 @@ package com.org.care_slot.service.impl;
 
 import com.org.care_slot.dto.request.PatientProfileCreateRequest;
 import com.org.care_slot.dto.request.PatientProfileUpdateRequest;
+import com.org.care_slot.dto.request.UpdatePrimaryProfileRequest;
 import com.org.care_slot.dto.response.PatientProfileResponse;
 import com.org.care_slot.entity.PatientProfile;
 import com.org.care_slot.entity.User;
+import com.org.care_slot.enums.ProfileType;
 import com.org.care_slot.exception.AppException;
 import com.org.care_slot.exception.ErrorCode;
 import com.org.care_slot.repository.PatientProfileRepository;
@@ -23,6 +25,29 @@ public class PatientProfileServiceImpl implements PatientProfileService {
 
     private final PatientProfileRepository patientProfileRepository;
     private final UserRepository userRepository;
+
+    @Override
+    @Transactional(readOnly = true)
+    public PatientProfileResponse getMyPrimaryProfile(Long userId) {
+        PatientProfile profile = patientProfileRepository.findByUserIdAndProfileType(userId, ProfileType.PRIMARY)
+                .orElseThrow(() -> new AppException(ErrorCode.PATIENT_PROFILE_NOT_FOUND));
+        return mapToResponse(profile);
+    }
+
+    @Override
+    public PatientProfileResponse updateMyPrimaryProfile(Long userId, UpdatePrimaryProfileRequest request) {
+        PatientProfile profile = patientProfileRepository.findByUserIdAndProfileType(userId, ProfileType.PRIMARY)
+                .orElseThrow(() -> new AppException(ErrorCode.PATIENT_PROFILE_NOT_FOUND));
+
+        profile.setFullName(request.getFullName().trim());
+        profile.setDateOfBirth(request.getDateOfBirth());
+        profile.setGender(request.getGender().trim());
+        profile.setPhone(request.getPhone().trim());
+
+        // Không thay đổi: user, profileType, relationship, status
+        PatientProfile updated = patientProfileRepository.save(profile);
+        return mapToResponse(updated);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -45,13 +70,17 @@ public class PatientProfileServiceImpl implements PatientProfileService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
+        String rel = request.getRelationship() != null ? request.getRelationship().trim().toUpperCase() : "SELF";
+        ProfileType profileType = "SELF".equals(rel) ? ProfileType.PRIMARY : ProfileType.FAMILY;
+
         PatientProfile profile = PatientProfile.builder()
                 .user(user)
+                .profileType(profileType)
                 .fullName(request.getFullName())
                 .dateOfBirth(request.getDateOfBirth())
                 .gender(request.getGender())
                 .phone(request.getPhone())
-                .relationship(request.getRelationship() != null ? request.getRelationship() : "SELF")
+                .relationship(rel)
                 .status("ACTIVE")
                 .build();
 
@@ -69,7 +98,9 @@ public class PatientProfileServiceImpl implements PatientProfileService {
         profile.setGender(request.getGender());
         profile.setPhone(request.getPhone());
         if (request.getRelationship() != null) {
-            profile.setRelationship(request.getRelationship());
+            String rel = request.getRelationship().trim().toUpperCase();
+            profile.setRelationship(rel);
+            profile.setProfileType("SELF".equals(rel) ? ProfileType.PRIMARY : ProfileType.FAMILY);
         }
 
         PatientProfile updated = patientProfileRepository.save(profile);
@@ -88,6 +119,7 @@ public class PatientProfileServiceImpl implements PatientProfileService {
         return PatientProfileResponse.builder()
                 .id(profile.getId())
                 .userId(profile.getUser() != null ? profile.getUser().getId() : null)
+                .profileType(profile.getProfileType())
                 .fullName(profile.getFullName())
                 .dateOfBirth(profile.getDateOfBirth())
                 .gender(profile.getGender())

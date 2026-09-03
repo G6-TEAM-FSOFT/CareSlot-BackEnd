@@ -1,5 +1,6 @@
 package com.org.care_slot.entity;
 
+import com.org.care_slot.enums.ProfileType;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -22,6 +23,11 @@ public class PatientProfile extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "profile_type", nullable = false, length = 20)
+    @Builder.Default
+    private ProfileType profileType = ProfileType.FAMILY;
 
     @Column(name = "full_name", nullable = false, length = 255)
     private String fullName;

@@ -2,8 +2,10 @@ package com.org.care_slot.controller;
 
 import com.org.care_slot.dto.request.PatientProfileCreateRequest;
 import com.org.care_slot.dto.request.PatientProfileUpdateRequest;
+import com.org.care_slot.dto.request.UpdatePrimaryProfileRequest;
 import com.org.care_slot.dto.response.ApiResponse;
 import com.org.care_slot.dto.response.PatientProfileResponse;
+import com.org.care_slot.security.CurrentUserProvider;
 import com.org.care_slot.service.PatientProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +21,26 @@ import java.util.List;
 public class PatientProfileController {
 
     private final PatientProfileService patientProfileService;
+    private final CurrentUserProvider currentUserProvider;
 
     // Temporary fallback User ID for testing/demo until SecurityContext is fully wired
     private final Long MOCK_USER_ID = 3L;
+
+    @GetMapping("/me/primary")
+    public ResponseEntity<ApiResponse<PatientProfileResponse>> getMyPrimaryProfile() {
+        Long userId = currentUserProvider.getCurrentPatientUserId();
+        PatientProfileResponse result = patientProfileService.getMyPrimaryProfile(userId);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @PutMapping("/me/primary")
+    public ResponseEntity<ApiResponse<PatientProfileResponse>> updateMyPrimaryProfile(
+            @Valid @RequestBody UpdatePrimaryProfileRequest request
+    ) {
+        Long userId = currentUserProvider.getCurrentPatientUserId();
+        PatientProfileResponse result = patientProfileService.updateMyPrimaryProfile(userId, request);
+        return ResponseEntity.ok(ApiResponse.success("Updated patient profile successfully", result));
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<PatientProfileResponse>>> getPatientProfiles(
