@@ -2,6 +2,7 @@ package com.org.care_slot.controller;
 
 import com.org.care_slot.dto.response.ApiResponse;
 import com.org.care_slot.dto.response.AppointmentResponse;
+import com.org.care_slot.dto.response.VNPayIpnResponse;
 import com.org.care_slot.service.VNPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -51,5 +52,12 @@ public class PaymentController {
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
-}
 
+    @GetMapping("/vnpay-ipn")
+    public ResponseEntity<VNPayIpnResponse> handleVNPayIpn(
+            @RequestParam Map<String, String> params
+    ) {
+        VNPayIpnResponse response = vnPayService.processIpn(params);
+        return ResponseEntity.ok(response);
+    }
+}

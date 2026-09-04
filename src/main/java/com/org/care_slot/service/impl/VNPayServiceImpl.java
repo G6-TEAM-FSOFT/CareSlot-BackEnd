@@ -1,6 +1,7 @@
 package com.org.care_slot.service.impl;
 
 import com.org.care_slot.dto.response.AppointmentResponse;
+import com.org.care_slot.dto.response.VNPayIpnResponse;
 import com.org.care_slot.entity.Appointment;
 import com.org.care_slot.entity.AppointmentSlot;
 import com.org.care_slot.entity.PaymentTransaction;
@@ -28,7 +29,6 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class VNPayServiceImpl implements VNPayService {
 
     private final AppointmentRepository appointmentRepository;
@@ -48,14 +48,16 @@ public class VNPayServiceImpl implements VNPayService {
     private String returnUrl;
 
     @Value("${vnpay.hold-timeout-minutes:10}")
-    private long holdTimeoutMinutes;
+    private Long holdTimeoutMinutes;
 
     @Override
+    @Transactional
     public String createPaymentUrl(Long appointmentId, Long userId, HttpServletRequest request) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new AppException(ErrorCode.APPOINTMENT_NOT_FOUND));
 
-        if (!appointment.getPatientProfile().getUser().getId().equals(userId)) {
+        if (appointment.getPatientProfile() == null || appointment.getPatientProfile().getUser() == null
+                || !appointment.getPatientProfile().getUser().getId().equals(userId)) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
@@ -65,7 +67,6 @@ public class VNPayServiceImpl implements VNPayService {
 
         String txnRef = "CS" + System.currentTimeMillis() + VNPayUtil.getRandomNumber(4);
 
-        // Lưu giao dịch PENDING
         PaymentTransaction transaction = PaymentTransaction.builder()
                 .txnRef(txnRef)
                 .appointment(appointment)
@@ -75,7 +76,6 @@ public class VNPayServiceImpl implements VNPayService {
                 .build();
         paymentTransactionRepository.save(transaction);
 
-        // Build VNPay params
         Map<String, String> vnpParams = new HashMap<>();
         vnpParams.put("vnp_Version", "2.1.0");
         vnpParams.put("vnp_Command", "pay");
@@ -105,11 +105,9 @@ public class VNPayServiceImpl implements VNPayService {
             String fieldName = itr.next();
             String fieldValue = vnpParams.get(fieldName);
             if (fieldValue != null && !fieldValue.isEmpty()) {
-                // Build hash data
                 hashData.append(fieldName);
                 hashData.append('=');
                 hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
-                // Build query
                 query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII));
                 query.append('=');
                 query.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
@@ -129,6 +127,7 @@ public class VNPayServiceImpl implements VNPayService {
     }
 
     @Override
+    @Transactional
     public AppointmentResponse handleCallback(Map<String, String> params) {
         String vnpSecureHash = params.get("vnp_SecureHash");
         Map<String, String> fields = new HashMap<>(params);
@@ -165,7 +164,6 @@ public class VNPayServiceImpl implements VNPayService {
         Appointment appointment = transaction.getAppointment();
         AppointmentSlot slot = appointment.getSlot();
 
-        // Check Idempotency: nếu giao dịch không còn PENDING thì trả về kết quả luôn
         if (transaction.getStatus() != PaymentStatus.PENDING) {
             return mapToResponse(appointment);
         }
@@ -199,6 +197,120 @@ public class VNPayServiceImpl implements VNPayService {
         Appointment savedAppointment = appointmentRepository.save(appointment);
 
         return mapToResponse(savedAppointment);
+    }
+
+    @Override
+    @Transactional
+    public VNPayIpnResponse processIpn(Map<String, String> params) {
+        String vnpSecureHash = params.get("vnp_SecureHash");
+        Map<String, String> fields = new HashMap<>(params);
+        fields.remove("vnp_SecureHash");
+        fields.remove("vnp_SecureHashType");
+
+        List<String> fieldNames = new ArrayList<>(fields.keySet());
+        Collections.sort(fieldNames);
+
+        StringBuilder hashData = new StringBuilder();
+        Iterator<String> itr = fieldNames.iterator();
+        while (itr.hasNext()) {
+            String fieldName = itr.next();
+            String fieldValue = fields.get(fieldName);
+            if (fieldValue != null && !fieldValue.isEmpty()) {
+                hashData.append(fieldName);
+                hashData.append('=');
+                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
+                if (itr.hasNext()) {
+                    hashData.append('&');
+                }
+            }
+        }
+
+        String signValue = VNPayUtil.hmacSHA512(hashSecret, hashData.toString());
+
+        // Step 1: Checksum verification
+        if (!signValue.equalsIgnoreCase(vnpSecureHash)) {
+            return VNPayIpnResponse.builder()
+                    .rspCode("97")
+                    .message("Invalid Checksum")
+                    .build();
+        }
+
+        String txnRef = params.get("vnp_TxnRef");
+        var transactionOpt = paymentTransactionRepository.findByTxnRef(txnRef);
+
+        // Step 2: Transaction lookup
+        if (transactionOpt.isEmpty()) {
+            return VNPayIpnResponse.builder()
+                    .rspCode("01")
+                    .message("Order not found")
+                    .build();
+        }
+
+        PaymentTransaction transaction = transactionOpt.get();
+        Appointment appointment = transaction.getAppointment();
+        AppointmentSlot slot = appointment.getSlot();
+
+        // Step 3: Amount check
+        String vnpAmountStr = params.get("vnp_Amount");
+        if (vnpAmountStr != null) {
+            try {
+                long vnpAmount = Long.parseLong(vnpAmountStr);
+                long expectedAmount = appointment.getDepositAmount().longValue() * 100;
+                if (vnpAmount != expectedAmount) {
+                    return VNPayIpnResponse.builder()
+                            .rspCode("04")
+                            .message("Invalid Amount")
+                            .build();
+                }
+            } catch (NumberFormatException e) {
+                return VNPayIpnResponse.builder()
+                        .rspCode("04")
+                        .message("Invalid Amount")
+                        .build();
+            }
+        }
+
+        // Step 4: Idempotency check - Order already confirmed
+        if (transaction.getStatus() != PaymentStatus.PENDING) {
+            return VNPayIpnResponse.builder()
+                    .rspCode("02")
+                    .message("Order already confirmed")
+                    .build();
+        }
+
+        // Step 5: Process status update
+        String responseCode = params.get("vnp_ResponseCode");
+        String transactionNo = params.get("vnp_TransactionNo");
+        String bankCode = params.get("vnp_BankCode");
+
+        transaction.setResponseCode(responseCode);
+        transaction.setTransactionNo(transactionNo);
+        transaction.setBankCode(bankCode);
+        transaction.setPaymentTime(LocalDateTime.now());
+
+        if ("00".equals(responseCode)) {
+            transaction.setStatus(PaymentStatus.SUCCESS);
+            appointment.setStatus(AppointmentStatus.CONFIRMED);
+            if (slot != null) {
+                slot.setStatus(SlotStatus.BOOKED);
+                appointmentSlotRepository.save(slot);
+            }
+        } else {
+            transaction.setStatus(PaymentStatus.FAILED);
+            appointment.setStatus(AppointmentStatus.CANCELLED);
+            if (slot != null) {
+                slot.setStatus(SlotStatus.AVAILABLE);
+                appointmentSlotRepository.save(slot);
+            }
+        }
+
+        paymentTransactionRepository.save(transaction);
+        appointmentRepository.save(appointment);
+
+        return VNPayIpnResponse.builder()
+                .rspCode("00")
+                .message("Confirm Success")
+                .build();
     }
 
     private AppointmentResponse mapToResponse(Appointment appointment) {
