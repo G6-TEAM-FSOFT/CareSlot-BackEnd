@@ -1,5 +1,6 @@
 package com.org.care_slot.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -24,6 +25,8 @@ public class ClinicResponse {
     private List<String> specialtyNames;
     private BigDecimal minConsultationFee;
     private BigDecimal maxConsultationFee;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime earliestAvailableSlot;
     private Double distanceKm;
 }
