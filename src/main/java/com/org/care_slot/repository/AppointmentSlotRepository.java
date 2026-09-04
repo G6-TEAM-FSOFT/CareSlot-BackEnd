@@ -52,6 +52,16 @@ public interface AppointmentSlotRepository extends JpaRepository<AppointmentSlot
 
        List<AppointmentSlot> findByStatusAndHoldExpiresAtBefore(SlotStatus status, java.time.LocalDateTime dateTime);
 
+       @Query("SELECT s FROM AppointmentSlot s WHERE " +
+                     "s.doctor.clinic.id IN :clinicIds AND " +
+                     "s.status = com.org.care_slot.enums.SlotStatus.AVAILABLE AND " +
+                     "(s.appointmentDate > :today OR (s.appointmentDate = :today AND s.startTime > :nowTime)) " +
+                     "ORDER BY s.appointmentDate ASC, s.startTime ASC")
+       List<AppointmentSlot> findFutureAvailableSlotsByClinicIds(
+                     @Param("clinicIds") List<Long> clinicIds,
+                     @Param("today") LocalDate today,
+                     @Param("nowTime") LocalTime nowTime);
+
        @Query("SELECT s FROM AppointmentSlot s WHERE s.status = :status AND " +
               "(s.appointmentDate < :currentDate OR (s.appointmentDate = :currentDate AND s.startTime <= :currentTime))")
        List<AppointmentSlot> findOverdueSlots(@Param("status") SlotStatus status,
