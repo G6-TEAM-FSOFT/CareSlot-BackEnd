@@ -7,10 +7,11 @@ import com.org.care_slot.dto.response.PageResponse;
 import com.org.care_slot.dto.response.SpecialtyResponse;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface ClinicService {
-    PageResponse<ClinicResponse> getClinics(String keyword, Long specialtyId, String location, Pageable pageable);
+    PageResponse<ClinicResponse> getClinics(String keyword, Long specialtyId, String location, BigDecimal userLat, BigDecimal userLng, String sortBy, Pageable pageable);
     ClinicDetailResponse getClinicDetail(Long id);
     ClinicDetailResponse updateClinic(Long clinicId, ClinicUpdateRequest request, Long staffClinicId);
     List<SpecialtyResponse> getClinicSpecialties(Long clinicId, Long staffClinicId);

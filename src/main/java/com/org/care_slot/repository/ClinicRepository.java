@@ -29,4 +29,16 @@ public interface ClinicRepository extends JpaRepository<Clinic, Long> {
             @Param("location") String location,
             Pageable pageable
     );
+
+    @Query("SELECT DISTINCT c FROM Clinic c " +
+           "LEFT JOIN c.specialties s " +
+           "WHERE c.status = 'ACTIVE' " +
+           "AND (:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.address) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "AND (:specialtyId IS NULL OR (s.id = :specialtyId AND s.status = 'ACTIVE')) " +
+           "AND (:location IS NULL OR LOWER(c.address) LIKE LOWER(CONCAT('%', :location, '%')))")
+    java.util.List<Clinic> findAllActiveFiltered(
+            @Param("keyword") String keyword,
+            @Param("specialtyId") Long specialtyId,
+            @Param("location") String location
+    );
 }

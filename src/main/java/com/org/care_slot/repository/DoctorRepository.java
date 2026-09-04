@@ -38,4 +38,7 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
                                     @Param("keyword") String keyword,
                                     @Param("status") String status,
                                     Pageable pageable);
+
+    @Query("SELECT d FROM Doctor d WHERE d.clinic.id IN :clinicIds AND d.status = 'ACTIVE'")
+    java.util.List<Doctor> findActiveDoctorsByClinicIds(@Param("clinicIds") java.util.List<Long> clinicIds);
 }
