@@ -6,9 +6,9 @@ spring:
     name: care-slot-backend
 
   datasource:
-    url: jdbc:mysql://localhost:3306/careslot_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3307/careslot_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: meomeo5104
+    password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:

@@ -5,6 +5,7 @@ import com.org.care_slot.dto.response.AppointmentResponse;
 import com.org.care_slot.exception.AppException;
 import com.org.care_slot.exception.ErrorCode;
 import com.org.care_slot.dto.response.VNPayIpnResponse;
+import com.org.care_slot.security.CurrentUserProvider;
 import com.org.care_slot.service.VNPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -22,15 +23,20 @@ import java.util.Map;
 public class PaymentController {
 
     private final VNPayService vnPayService;
+    private final CurrentUserProvider currentUserProvider;
 
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
     private Long getEffectiveUserId(Long headerUserId) {
-        if (headerUserId == null) {
+        if (headerUserId != null) {
+            return headerUserId;
+        }
+        try {
+            return currentUserProvider.getCurrentPatientUserId();
+        } catch (Exception e) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
-        return headerUserId;
     }
 
     @PostMapping("/create-url")
