@@ -11,8 +11,22 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ClinicRepository extends JpaRepository<Clinic, Long> {
 
-    @Query("SELECT c FROM Clinic c WHERE " +
-           "(:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.address) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-           "AND c.status = 'ACTIVE'")
-    Page<Clinic> searchClinics(@Param("keyword") String keyword, Pageable pageable);
+    @Query(value = "SELECT DISTINCT c FROM Clinic c " +
+           "LEFT JOIN c.specialties s " +
+           "WHERE c.status = 'ACTIVE' " +
+           "AND (:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.address) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "AND (:specialtyId IS NULL OR (s.id = :specialtyId AND s.status = 'ACTIVE')) " +
+           "AND (:location IS NULL OR LOWER(c.address) LIKE LOWER(CONCAT('%', :location, '%')))",
+           countQuery = "SELECT COUNT(DISTINCT c) FROM Clinic c " +
+           "LEFT JOIN c.specialties s " +
+           "WHERE c.status = 'ACTIVE' " +
+           "AND (:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.address) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "AND (:specialtyId IS NULL OR (s.id = :specialtyId AND s.status = 'ACTIVE')) " +
+           "AND (:location IS NULL OR LOWER(c.address) LIKE LOWER(CONCAT('%', :location, '%')))")
+    Page<Clinic> searchClinics(
+            @Param("keyword") String keyword,
+            @Param("specialtyId") Long specialtyId,
+            @Param("location") String location,
+            Pageable pageable
+    );
 }

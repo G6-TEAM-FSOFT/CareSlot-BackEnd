@@ -10,7 +10,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface ClinicService {
-    PageResponse<ClinicResponse> getClinics(String keyword, Pageable pageable);
+    PageResponse<ClinicResponse> getClinics(String keyword, Long specialtyId, String location, Pageable pageable);
     ClinicDetailResponse getClinicDetail(Long id);
     ClinicDetailResponse updateClinic(Long clinicId, ClinicUpdateRequest request, Long staffClinicId);
     List<SpecialtyResponse> getClinicSpecialties(Long clinicId, Long staffClinicId);

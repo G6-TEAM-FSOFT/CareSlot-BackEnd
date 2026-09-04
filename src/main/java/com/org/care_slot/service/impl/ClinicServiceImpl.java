@@ -29,8 +29,8 @@ public class ClinicServiceImpl implements ClinicService {
     private final SpecialtyRepository specialtyRepository;
 
     @Override
-    public PageResponse<ClinicResponse> getClinics(String keyword, Pageable pageable) {
-        Page<Clinic> page = clinicRepository.searchClinics(keyword, pageable);
+    public PageResponse<ClinicResponse> getClinics(String keyword, Long specialtyId, String location, Pageable pageable) {
+        Page<Clinic> page = clinicRepository.searchClinics(keyword, specialtyId, location, pageable);
         List<ClinicResponse> content = page.getContent().stream()
                 .map(this::mapToClinicResponse)
                 .toList();
