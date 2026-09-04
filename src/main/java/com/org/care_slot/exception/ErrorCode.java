@@ -26,6 +26,8 @@ public enum ErrorCode {
     INVALID_SLOT_TIME(3005, "Slot start time must be before end time", HttpStatus.BAD_REQUEST),
     APPOINTMENT_NOT_FOUND(4001, "Appointment not found", HttpStatus.NOT_FOUND),
     INVALID_APPOINTMENT_STATUS(4002, "Invalid appointment status transition", HttpStatus.BAD_REQUEST),
+    CANNOT_CANCEL_PAST_START_TIME(4003, "Đã qua hoặc đến giờ khám, không thể hủy lịch hẹn", HttpStatus.BAD_REQUEST),
+    INVALID_CHECKIN_TIME(4004, "Chỉ được phép Check-in đúng ngày khám và trong vòng 2 tiếng trước giờ khám", HttpStatus.BAD_REQUEST),
     PAYMENT_FAILED(5001, "Payment processing failed", HttpStatus.PAYMENT_REQUIRED),
     INVALID_EXCEL_FILE(6001, "Invalid Excel file format or data", HttpStatus.BAD_REQUEST),
     INVALID_PAYMENT_SIGNATURE(5002, "Invalid payment signature", HttpStatus.BAD_REQUEST),

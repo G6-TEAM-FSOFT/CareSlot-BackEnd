@@ -34,6 +34,7 @@ public class VNPayServiceImpl implements VNPayService {
     private final AppointmentRepository appointmentRepository;
     private final AppointmentSlotRepository appointmentSlotRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
+    private final com.org.care_slot.service.BookingLogService bookingLogService;
 
     @Value("${vnpay.tmn-code}")
     private String tmnCode;
@@ -188,15 +189,23 @@ public class VNPayServiceImpl implements VNPayService {
             }
         } else {
             transaction.setStatus(PaymentStatus.FAILED);
-            appointment.setStatus(AppointmentStatus.CANCELLED);
+            appointment.setStatus(AppointmentStatus.EXPIRED);
             if (slot != null) {
                 slot.setStatus(SlotStatus.AVAILABLE);
+                slot.setHeldAt(null);
+                slot.setHoldExpiresAt(null);
                 appointmentSlotRepository.save(slot);
             }
         }
 
         paymentTransactionRepository.save(transaction);
         Appointment savedAppointment = appointmentRepository.save(appointment);
+
+        if ("00".equals(responseCode)) {
+            bookingLogService.logEvent(savedAppointment, "PENDING_PAYMENT", "CONFIRMED", "PAYMENT_SUCCESS", "Thanh toán cọc thành công qua VNPAY, lịch hẹn đã được xác nhận", "PATIENT");
+        } else {
+            bookingLogService.logEvent(savedAppointment, "PENDING_PAYMENT", "EXPIRED", "PAYMENT_FAILED", "Thanh toán tiền cọc thất bại qua VNPAY, lịch hẹn đã hết hạn", "PATIENT");
+        }
 
         return mapToResponse(savedAppointment);
     }

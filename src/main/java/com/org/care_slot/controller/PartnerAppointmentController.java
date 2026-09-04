@@ -70,4 +70,14 @@ public class PartnerAppointmentController {
         List<BookingLogResponse> result = bookingLogService.getAppointmentLogs(id);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
+
+    @PatchMapping("/{id}/check-in")
+    public ResponseEntity<ApiResponse<AppointmentResponse>> checkInAppointment(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Clinic-Id", required = false) Long headerClinicId
+    ) {
+        Long clinicId = getEffectiveClinicId(headerClinicId);
+        AppointmentResponse result = appointmentService.checkInAppointment(clinicId, id, clinicId);
+        return ResponseEntity.ok(ApiResponse.success("Xác nhận bệnh nhân đã đến khám (CHECKED_IN) thành công", result));
+    }
 }
