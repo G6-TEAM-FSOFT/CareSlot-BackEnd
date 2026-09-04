@@ -18,4 +18,5 @@ public interface AppointmentService {
 
     PageResponse<AppointmentResponse> getClinicAppointments(Long clinicId, AppointmentStatus status, Long doctorId, LocalDate date, Pageable pageable, Long staffClinicId);
     AppointmentResponse getPartnerAppointmentDetail(Long clinicId, Long appointmentId, Long staffClinicId);
+    AppointmentResponse checkInAppointment(Long clinicId, Long appointmentId, Long staffClinicId);
 }

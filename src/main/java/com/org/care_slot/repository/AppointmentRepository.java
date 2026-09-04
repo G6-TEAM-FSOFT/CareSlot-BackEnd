@@ -37,4 +37,10 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             Pageable pageable);
 
     Optional<Appointment> findBySlotIdAndStatus(Long slotId, AppointmentStatus status);
+
+    @Query("SELECT a FROM Appointment a WHERE a.status = :status AND " +
+           "(a.slot.appointmentDate < :currentDate OR (a.slot.appointmentDate = :currentDate AND a.slot.startTime <= :currentTime))")
+    java.util.List<Appointment> findOverdueConfirmedAppointments(@Param("status") AppointmentStatus status,
+                                                                 @Param("currentDate") LocalDate currentDate,
+                                                                 @Param("currentTime") java.time.LocalTime currentTime);
 }

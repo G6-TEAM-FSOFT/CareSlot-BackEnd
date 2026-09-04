@@ -17,6 +17,12 @@ public class PatientProfileResponse {
     private LocalDate dateOfBirth;
     private String gender;
     private String phone;
+    private String identityCard;
+    private LocalDate cardIssueDate;
+    private String ethnicity;
+    private String nationality;
+    private String occupation;
+    private String address;
     private String relationship;
     private String status;
 }

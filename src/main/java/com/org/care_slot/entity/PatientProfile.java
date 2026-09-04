@@ -41,6 +41,26 @@ public class PatientProfile extends BaseEntity {
     @Column(name = "phone", length = 20)
     private String phone;
 
+    @Column(name = "identity_card", length = 50)
+    private String identityCard;
+
+    @Column(name = "card_issue_date")
+    private LocalDate cardIssueDate;
+
+    @Column(name = "ethnicity", length = 50)
+    @Builder.Default
+    private String ethnicity = "Kinh";
+
+    @Column(name = "nationality", length = 50)
+    @Builder.Default
+    private String nationality = "Việt Nam";
+
+    @Column(name = "occupation", length = 100)
+    private String occupation;
+
+    @Column(name = "address", length = 500)
+    private String address;
+
     @Column(name = "relationship", nullable = false, length = 30)
     @Builder.Default
     private String relationship = "SELF";
