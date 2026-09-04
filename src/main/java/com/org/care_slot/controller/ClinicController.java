@@ -21,11 +21,13 @@ public class ClinicController {
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ClinicResponse>>> getClinics(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long specialtyId,
+            @RequestParam(required = false) String location,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        PageResponse<ClinicResponse> result = clinicService.getClinics(keyword, pageable);
+        PageResponse<ClinicResponse> result = clinicService.getClinics(keyword, specialtyId, location, pageable);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
