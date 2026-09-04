@@ -6,9 +6,9 @@ spring:
     name: care-slot-backend
 
   datasource:
-    url: jdbc:mysql://localhost:3307/careslot_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/careslot_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: root
+    password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -56,4 +56,3 @@ vnpay:
   pay-url: ${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
   return-url: ${VNPAY_RETURN_URL:http://localhost:5173/payment/vnpay-callback}
   hold-timeout-minutes: ${VNPAY_HOLD_TIMEOUT_MINUTES:10}
-

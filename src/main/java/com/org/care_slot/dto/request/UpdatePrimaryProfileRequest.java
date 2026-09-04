@@ -25,4 +25,11 @@ public class UpdatePrimaryProfileRequest {
 
     @NotBlank(message = "Phone number is required")
     private String phone;
+
+    private String identityCard;
+    private LocalDate cardIssueDate;
+    private String ethnicity;
+    private String nationality;
+    private String occupation;
+    private String address;
 }
