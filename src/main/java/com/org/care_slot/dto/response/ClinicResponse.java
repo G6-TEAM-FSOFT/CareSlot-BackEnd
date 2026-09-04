@@ -3,6 +3,8 @@ package com.org.care_slot.dto.response;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -17,4 +19,11 @@ public class ClinicResponse {
     private String phone;
     private String description;
     private String status;
+
+    // Derived fields for US-13 (T-134 / T-136)
+    private List<String> specialtyNames;
+    private BigDecimal minConsultationFee;
+    private BigDecimal maxConsultationFee;
+    private LocalDateTime earliestAvailableSlot;
+    private Double distanceKm;
 }

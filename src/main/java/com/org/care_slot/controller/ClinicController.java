@@ -11,6 +11,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping("/api/v1/clinics")
 @RequiredArgsConstructor
@@ -23,11 +25,16 @@ public class ClinicController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long specialtyId,
             @RequestParam(required = false) String location,
+            @RequestParam(required = false) BigDecimal userLat,
+            @RequestParam(required = false) BigDecimal userLng,
+            @RequestParam(defaultValue = "DEFAULT") String sortBy,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        PageResponse<ClinicResponse> result = clinicService.getClinics(keyword, specialtyId, location, pageable);
+        PageResponse<ClinicResponse> result = clinicService.getClinics(
+                keyword, specialtyId, location, userLat, userLng, sortBy, pageable
+        );
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
