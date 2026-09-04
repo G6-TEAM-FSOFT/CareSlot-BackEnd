@@ -88,7 +88,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment saved = appointmentRepository.save(appointment);
 
         // US-24: Log appointment lifecycle event
-        bookingLogService.logEvent(saved, null, saved.getStatus().name(), "APPOINTMENT_CONFIRMED", "Booking created and confirmed", "PATIENT");
+        bookingLogService.logEvent(saved, null, "PENDING_PAYMENT", "APPOINTMENT_CREATED", "Lịch hẹn đã được khởi tạo, đang chờ thanh toán tiền cọc", "PATIENT");
 
         return mapToResponse(saved);
     }
@@ -147,18 +147,36 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
-        if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
+        if (appointment.getStatus() != AppointmentStatus.CONFIRMED && appointment.getStatus() != AppointmentStatus.PENDING_PAYMENT) {
             throw new AppException(ErrorCode.INVALID_APPOINTMENT_STATUS);
+        }
+
+        AppointmentSlot slot = appointment.getSlot();
+        LocalDateTime now = LocalDateTime.now();
+
+        if (slot != null && slot.getAppointmentDate() != null && slot.getStartTime() != null) {
+            LocalDateTime startDateTime = slot.getAppointmentDate().atTime(slot.getStartTime());
+            if (!now.isBefore(startDateTime)) {
+                // Đã đến hoặc qua giờ startTime: Chuyển Appointment sang REJECTED và Slot sang OVER_DATE, chặn hủy
+                appointment.setStatus(AppointmentStatus.REJECTED);
+                appointment.setRejectedAt(now);
+                slot.setStatus(SlotStatus.OVER_DATE);
+                appointmentSlotRepository.save(slot);
+                Appointment savedRejected = appointmentRepository.save(appointment);
+                bookingLogService.logEvent(savedRejected, "CONFIRMED", "REJECTED", "APPOINTMENT_REJECTED_OVERDUE", "Attempted cancellation past start time", "SYSTEM");
+                throw new AppException(ErrorCode.CANNOT_CANCEL_PAST_START_TIME);
+            }
         }
 
         String previousStatus = appointment.getStatus().name();
         appointment.setStatus(AppointmentStatus.CANCELLED);
-        appointment.setCancelledAt(LocalDateTime.now());
+        appointment.setCancelledAt(now);
 
         // Release slot to AVAILABLE
-        AppointmentSlot slot = appointment.getSlot();
         if (slot != null) {
             slot.setStatus(SlotStatus.AVAILABLE);
+            slot.setHeldAt(null);
+            slot.setHoldExpiresAt(null);
             appointmentSlotRepository.save(slot);
         }
 
@@ -209,6 +227,48 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
 
         return mapToResponse(appointment);
+    }
+
+    @Override
+    public AppointmentResponse checkInAppointment(Long clinicId, Long appointmentId, Long staffClinicId) {
+        if (staffClinicId == null || !staffClinicId.equals(clinicId)) {
+            throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
+        }
+
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new AppException(ErrorCode.APPOINTMENT_NOT_FOUND));
+
+        if (appointment.getSlot() == null || appointment.getSlot().getDoctor() == null ||
+            appointment.getSlot().getDoctor().getClinic() == null ||
+            !appointment.getSlot().getDoctor().getClinic().getId().equals(clinicId)) {
+            throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
+        }
+
+        if (appointment.getStatus() != AppointmentStatus.CONFIRMED) {
+            throw new AppException(ErrorCode.INVALID_APPOINTMENT_STATUS);
+        }
+
+        // Validate Check-in window: ONLY allowed on appointmentDate and within 2 hours prior to startTime
+        AppointmentSlot slot = appointment.getSlot();
+        if (slot != null && slot.getAppointmentDate() != null && slot.getStartTime() != null) {
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime startDateTime = slot.getAppointmentDate().atTime(slot.getStartTime());
+            LocalDateTime checkInWindowStart = startDateTime.minusHours(2);
+
+            if (now.isBefore(checkInWindowStart) || !now.isBefore(startDateTime)) {
+                throw new AppException(ErrorCode.INVALID_CHECKIN_TIME);
+            }
+        }
+
+        String previousStatus = appointment.getStatus().name();
+        appointment.setStatus(AppointmentStatus.CHECKED_IN);
+        appointment.setCheckedInAt(LocalDateTime.now());
+
+        Appointment updated = appointmentRepository.save(appointment);
+
+        bookingLogService.logEvent(updated, previousStatus, "CHECKED_IN", "APPOINTMENT_CHECKED_IN", "Patient checked in at clinic", "CLINIC_STAFF");
+
+        return mapToResponse(updated);
     }
 
     private String generateBookingCode() {

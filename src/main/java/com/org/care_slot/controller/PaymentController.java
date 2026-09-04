@@ -2,6 +2,8 @@ package com.org.care_slot.controller;
 
 import com.org.care_slot.dto.response.ApiResponse;
 import com.org.care_slot.dto.response.AppointmentResponse;
+import com.org.care_slot.exception.AppException;
+import com.org.care_slot.exception.ErrorCode;
 import com.org.care_slot.service.VNPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -19,17 +21,25 @@ import java.util.Map;
 public class PaymentController {
 
     private final VNPayService vnPayService;
-    private final Long MOCK_USER_ID = 3L;
 
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
+    private Long getEffectiveUserId(Long headerUserId) {
+        if (headerUserId == null) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+        return headerUserId;
+    }
+
     @PostMapping("/create-url")
     public ResponseEntity<ApiResponse<String>> createPaymentUrl(
             @RequestParam Long appointmentId,
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
             HttpServletRequest request
     ) {
-        String paymentUrl = vnPayService.createPaymentUrl(appointmentId, MOCK_USER_ID, request);
+        Long userId = getEffectiveUserId(headerUserId);
+        String paymentUrl = vnPayService.createPaymentUrl(appointmentId, userId, request);
         return ResponseEntity.ok(ApiResponse.success(paymentUrl));
     }
 
@@ -52,4 +62,3 @@ public class PaymentController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
-

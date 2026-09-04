@@ -61,4 +61,10 @@ public interface AppointmentSlotRepository extends JpaRepository<AppointmentSlot
                      @Param("clinicIds") List<Long> clinicIds,
                      @Param("today") LocalDate today,
                      @Param("nowTime") LocalTime nowTime);
+
+       @Query("SELECT s FROM AppointmentSlot s WHERE s.status = :status AND " +
+              "(s.appointmentDate < :currentDate OR (s.appointmentDate = :currentDate AND s.startTime <= :currentTime))")
+       List<AppointmentSlot> findOverdueSlots(@Param("status") SlotStatus status,
+                                              @Param("currentDate") LocalDate currentDate,
+                                              @Param("currentTime") LocalTime currentTime);
 }

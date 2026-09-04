@@ -5,6 +5,8 @@ import com.org.care_slot.dto.response.AppointmentResponse;
 import com.org.care_slot.dto.response.BookingLogResponse;
 import com.org.care_slot.dto.response.PageResponse;
 import com.org.care_slot.enums.AppointmentStatus;
+import com.org.care_slot.exception.AppException;
+import com.org.care_slot.exception.ErrorCode;
 import com.org.care_slot.service.AppointmentService;
 import com.org.care_slot.service.BookingLogService;
 import lombok.RequiredArgsConstructor;
@@ -25,11 +27,11 @@ public class PartnerAppointmentController {
     private final AppointmentService appointmentService;
     private final BookingLogService bookingLogService;
 
-    // Temporary fallback Clinic ID for testing/demo until SecurityContext JWT filter is fully wired
-    private final Long MOCK_CLINIC_ID = 1L;
-
     private Long getEffectiveClinicId(Long headerClinicId) {
-        return headerClinicId != null ? headerClinicId : MOCK_CLINIC_ID;
+        if (headerClinicId == null) {
+            throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
+        }
+        return headerClinicId;
     }
 
     @GetMapping
@@ -67,5 +69,15 @@ public class PartnerAppointmentController {
         appointmentService.getPartnerAppointmentDetail(clinicId, id, clinicId);
         List<BookingLogResponse> result = bookingLogService.getAppointmentLogs(id);
         return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @PatchMapping("/{id}/check-in")
+    public ResponseEntity<ApiResponse<AppointmentResponse>> checkInAppointment(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Clinic-Id", required = false) Long headerClinicId
+    ) {
+        Long clinicId = getEffectiveClinicId(headerClinicId);
+        AppointmentResponse result = appointmentService.checkInAppointment(clinicId, id, clinicId);
+        return ResponseEntity.ok(ApiResponse.success("Xác nhận bệnh nhân đã đến khám (CHECKED_IN) thành công", result));
     }
 }
