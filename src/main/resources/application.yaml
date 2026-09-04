@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: 8080
 
 spring:
@@ -6,9 +6,9 @@ spring:
     name: care-slot-backend
 
   datasource:
-    url: jdbc:mysql://localhost:3306/careslot_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3307/careslot_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: 123456
+    password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -52,7 +52,10 @@ app:
 
 vnpay:
   tmn-code: ${VNPAY_TMN_CODE:AS09APAU}
-  hash-secret: ${VNPAY_HASH_SECRET:BZKK4YZW5D75KC87AWRN75YN0FR2DD52}
+  hash-secret: ${VNPAY_HASH_SECRET:BZKK4YZW5D75KC87AWRN75YN0FR2DD52} 
   pay-url: ${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
   return-url: ${VNPAY_RETURN_URL:http://localhost:5173/payment/vnpay-callback}
+  ipn-url: ${VNPAY_IPN_URL:http://localhost:8080/api/v1/payments/vnpay-ipn}
   hold-timeout-minutes: ${VNPAY_HOLD_TIMEOUT_MINUTES:10}
+
+
