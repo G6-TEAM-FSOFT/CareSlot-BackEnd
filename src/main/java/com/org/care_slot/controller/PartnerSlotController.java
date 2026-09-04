@@ -6,6 +6,8 @@ import com.org.care_slot.dto.response.ApiResponse;
 import com.org.care_slot.dto.response.AppointmentSlotResponse;
 import com.org.care_slot.dto.response.ExcelImportResultResponse;
 import com.org.care_slot.enums.SlotStatus;
+import com.org.care_slot.exception.AppException;
+import com.org.care_slot.exception.ErrorCode;
 import com.org.care_slot.service.AppointmentSlotService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,11 +27,11 @@ public class PartnerSlotController {
 
     private final AppointmentSlotService appointmentSlotService;
 
-    // Temporary fallback Clinic ID for testing/demo until SecurityContext JWT filter is fully wired
-    private final Long MOCK_CLINIC_ID = 1L;
-
     private Long getEffectiveClinicId(Long headerClinicId) {
-        return headerClinicId != null ? headerClinicId : MOCK_CLINIC_ID;
+        if (headerClinicId == null) {
+            throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
+        }
+        return headerClinicId;
     }
 
     @GetMapping
