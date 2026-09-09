@@ -5,6 +5,12 @@ spring:
   application:
     name: care-slot-backend
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
   datasource:
     url: jdbc:mysql://localhost:3306/careslot_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
@@ -60,5 +66,5 @@ vnpay:
 
 gemini:
   api:
-    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
+    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent
     key: ${GEMINI_API_KEY}

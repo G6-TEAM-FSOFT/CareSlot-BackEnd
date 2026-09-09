@@ -40,6 +40,13 @@ public class SpecialtyServiceImpl implements SpecialtyService {
                 .toList();
     }
 
+    @Override
+    public List<SpecialtyResponse> getActiveSpecialtiesForChat() {
+        return specialtyRepository.findByStatus("ACTIVE").stream()
+                .map(this::mapToSpecialtyResponse)
+                .toList();
+    }
+
     private SpecialtyResponse mapToSpecialtyResponse(Specialty specialty) {
         return SpecialtyResponse.builder()
                 .id(specialty.getId())

@@ -8,4 +8,5 @@ public interface SpecialtyService {
     List<SpecialtyResponse> filterSpecialties(Long clinicId, String keyword);
     SpecialtyResponse getSpecialtyDetail(Long id);
     List<SpecialtyResponse> getSpecialtiesByClinic(Long clinicId);
+    List<SpecialtyResponse> getActiveSpecialtiesForChat();
 }

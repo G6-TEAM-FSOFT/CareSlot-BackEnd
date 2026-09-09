@@ -14,6 +14,7 @@ public enum ErrorCode {
     PATIENT_PROFILE_NOT_FOUND(1006, "Patient profile not found", HttpStatus.NOT_FOUND),
     PRIMARY_PROFILE_ALREADY_EXISTS(1007, "Tài khoản đã có hồ sơ Chủ tài khoản, không thể tạo thêm", HttpStatus.BAD_REQUEST),
     CANNOT_DELETE_PRIMARY_PROFILE(1008, "Không thể xóa hồ sơ Chủ tài khoản", HttpStatus.BAD_REQUEST),
+    TOO_MANY_REQUESTS(1009, "Bạn đã gửi quá nhiều yêu cầu chat, vui lòng thử lại sau 1 phút", HttpStatus.TOO_MANY_REQUESTS),
     CLINIC_NOT_FOUND(2001, "Clinic not found", HttpStatus.NOT_FOUND),
     FORBIDDEN_CLINIC_ACCESS(2004, "You do not have permission to manage this clinic", HttpStatus.FORBIDDEN),
     DOCTOR_NOT_FOUND(2002, "Doctor not found", HttpStatus.NOT_FOUND),
