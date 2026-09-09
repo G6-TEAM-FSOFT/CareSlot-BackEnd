@@ -3,11 +3,13 @@ package com.org.care_slot.repository;
 import com.org.care_slot.entity.AppointmentSlot;
 import com.org.care_slot.enums.SlotStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -67,4 +69,18 @@ public interface AppointmentSlotRepository extends JpaRepository<AppointmentSlot
        List<AppointmentSlot> findOverdueSlots(@Param("status") SlotStatus status,
                                               @Param("currentDate") LocalDate currentDate,
                                               @Param("currentTime") LocalTime currentTime);
+
+       @Modifying(clearAutomatically = true)
+       @Query("UPDATE AppointmentSlot s SET s.status = :heldStatus, " +
+              "s.heldAt = :heldAt, s.holdExpiresAt = :holdExpiresAt " +
+              "WHERE s.id = :slotId AND s.status = :availableStatus")
+       int holdSlotAtomic(@Param("slotId") Long slotId,
+                          @Param("heldAt") LocalDateTime heldAt,
+                          @Param("holdExpiresAt") LocalDateTime holdExpiresAt,
+                          @Param("heldStatus") SlotStatus heldStatus,
+                          @Param("availableStatus") SlotStatus availableStatus);
+
+       default int holdSlotAtomic(Long slotId, LocalDateTime heldAt, LocalDateTime holdExpiresAt) {
+              return holdSlotAtomic(slotId, heldAt, holdExpiresAt, SlotStatus.HELD, SlotStatus.AVAILABLE);
+       }
 }
