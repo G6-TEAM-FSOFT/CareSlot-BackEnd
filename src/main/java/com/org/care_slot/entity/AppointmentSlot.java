@@ -38,6 +38,10 @@ public class AppointmentSlot extends BaseEntity {
     @Column(name = "room_name", length = 100)
     private String roomName;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id")
+    private Room room;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
     @Builder.Default

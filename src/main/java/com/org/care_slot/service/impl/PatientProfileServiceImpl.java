@@ -113,32 +113,25 @@ public class PatientProfileServiceImpl implements PatientProfileService {
 
     @Override
     public PatientProfileResponse updatePatientProfile(Long id, Long userId, PatientProfileUpdateRequest request) {
-        PatientProfile profile = patientProfileRepository.findByIdAndUserIdAndStatus(id, userId, "ACTIVE")
+        PatientProfile profile = patientProfileRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PATIENT_PROFILE_NOT_FOUND));
 
-        profile.setFullName(request.getFullName());
+        if (request.getFullName() != null && !request.getFullName().isBlank()) {
+            profile.setFullName(request.getFullName().trim());
+        }
         profile.setDateOfBirth(request.getDateOfBirth());
-        profile.setGender(request.getGender());
-        profile.setPhone(request.getPhone());
-        if (request.getIdentityCard() != null) profile.setIdentityCard(request.getIdentityCard());
+        if (request.getGender() != null) profile.setGender(request.getGender().trim());
+        if (request.getPhone() != null) profile.setPhone(request.getPhone().trim());
+        if (request.getIdentityCard() != null) profile.setIdentityCard(request.getIdentityCard().trim());
         if (request.getCardIssueDate() != null) profile.setCardIssueDate(request.getCardIssueDate());
-        if (request.getEthnicity() != null) profile.setEthnicity(request.getEthnicity());
-        if (request.getNationality() != null) profile.setNationality(request.getNationality());
-        if (request.getOccupation() != null) profile.setOccupation(request.getOccupation());
-        if (request.getAddress() != null) profile.setAddress(request.getAddress());
+        if (request.getEthnicity() != null) profile.setEthnicity(request.getEthnicity().trim());
+        if (request.getNationality() != null) profile.setNationality(request.getNationality().trim());
+        if (request.getOccupation() != null) profile.setOccupation(request.getOccupation().trim());
+        if (request.getAddress() != null) profile.setAddress(request.getAddress().trim());
 
-        if (request.getRelationship() != null) {
+        if (request.getRelationship() != null && !request.getRelationship().isBlank()) {
             String rel = request.getRelationship().trim().toUpperCase();
-            if ("SELF".equals(rel) && profile.getProfileType() != ProfileType.PRIMARY) {
-                boolean hasPrimary = patientProfileRepository
-                        .findByUserIdAndProfileTypeAndStatus(userId, ProfileType.PRIMARY, "ACTIVE")
-                        .isPresent();
-                if (hasPrimary) {
-                    throw new AppException(ErrorCode.PRIMARY_PROFILE_ALREADY_EXISTS);
-                }
-            }
             profile.setRelationship(rel);
-            profile.setProfileType("SELF".equals(rel) ? ProfileType.PRIMARY : ProfileType.FAMILY);
         }
 
         PatientProfile updated = patientProfileRepository.save(profile);

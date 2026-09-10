@@ -32,7 +32,7 @@ public class PatientProfileController {
         try {
             return currentUserProvider.getCurrentPatientUserId();
         } catch (Exception e) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+            return null;
         }
     }
 

@@ -11,6 +11,11 @@ public class AppException extends RuntimeException {
         this.errorCode = errorCode;
     }
 
+    public AppException(String message) {
+        super(message);
+        this.errorCode = ErrorCode.UNCATEGORIZED_EXCEPTION;
+    }
+
     public AppException(ErrorCode errorCode, String message) {
         super(message);
         this.errorCode = errorCode;
