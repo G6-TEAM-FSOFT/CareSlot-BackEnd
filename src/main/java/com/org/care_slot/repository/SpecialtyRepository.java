@@ -13,6 +13,8 @@ public interface SpecialtyRepository extends JpaRepository<Specialty, Long> {
 
     List<Specialty> findByClinics_IdAndStatus(Long clinicId, String status);
 
+    List<Specialty> findByStatus(String status);
+
     @Query("SELECT DISTINCT s FROM Specialty s LEFT JOIN s.clinics c WHERE " +
            "(:clinicId IS NULL OR c.id = :clinicId) AND " +
            "(:keyword IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +

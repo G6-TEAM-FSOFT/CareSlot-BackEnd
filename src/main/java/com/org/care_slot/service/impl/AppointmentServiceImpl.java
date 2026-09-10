@@ -39,6 +39,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final AppointmentSlotRepository appointmentSlotRepository;
     private final PatientProfileRepository patientProfileRepository;
+    private final com.org.care_slot.repository.InvoiceRepository invoiceRepository;
     private final BookingLogService bookingLogService;
 
     private static final BigDecimal DEFAULT_DEPOSIT_AMOUNT = new BigDecimal("100000.00");
@@ -91,6 +92,17 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .build();
 
         Appointment saved = appointmentRepository.save(appointment);
+
+        // Tạo Hóa đơn cọc (APPOINTMENT_DEPOSIT) ở trạng thái PENDING trong bảng invoices
+        com.org.care_slot.entity.Invoice pendingInvoice = com.org.care_slot.entity.Invoice.builder()
+                .invoiceCode("INV-DEP-" + saved.getBookingCode())
+                .appointment(saved)
+                .patientProfile(saved.getPatientProfile())
+                .invoiceType("APPOINTMENT_DEPOSIT")
+                .totalAmount(saved.getDepositAmount())
+                .status("PENDING")
+                .build();
+        invoiceRepository.save(pendingInvoice);
 
         // US-24: Log appointment lifecycle event
         bookingLogService.logEvent(saved, null, "PENDING_PAYMENT", "APPOINTMENT_CREATED",

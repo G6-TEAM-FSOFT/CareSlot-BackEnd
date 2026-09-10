@@ -1,0 +1,302 @@
+-- ============================================================
+-- CareSlot Migration V8: Outpatient Clinical Workflow Architecture
+-- ============================================================
+
+-- 1. DEPARTMENTS (Bảng Khoa/Phòng độc lập)
+CREATE TABLE IF NOT EXISTS departments (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    clinic_id BIGINT UNSIGNED NOT NULL,
+    code VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    dept_type VARCHAR(50) NOT NULL DEFAULT 'CLINICAL', -- CLINICAL, LABORATORY, IMAGING, RECEPTION
+    status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_departments_clinic FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 2. ROOMS (Phòng khám / Phòng CLS cụ thể)
+CREATE TABLE IF NOT EXISTS rooms (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    clinic_id BIGINT UNSIGNED NOT NULL,
+    department_id BIGINT UNSIGNED NOT NULL,
+    room_number VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    room_type VARCHAR(50) NOT NULL, -- CONSULTATION, LAB_COLLECTION, ULTRASOUND, XRAY, CT, CASHIER
+    status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_rooms_clinic FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE CASCADE,
+    CONSTRAINT fk_rooms_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 3. BỔ SUNG ROOM_ID CHO APPOINTMENT_SLOTS (Tương thích v1 -> v2)
+ALTER TABLE appointment_slots 
+ADD COLUMN room_id BIGINT UNSIGNED NULL AFTER room_name,
+ADD CONSTRAINT fk_slots_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL;
+
+-- 4. RESULT TEMPLATES (Template kết quả cận lâm sàng)
+CREATE TABLE IF NOT EXISTS result_templates (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(100) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    service_type VARCHAR(50) NOT NULL, -- LABORATORY, IMAGING
+    template_schema JSON NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 5. MEDICAL RECORD TEMPLATES (Template bệnh án chuyên khoa)
+CREATE TABLE IF NOT EXISTS medical_record_templates (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    specialty_id BIGINT UNSIGNED NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    version INT NOT NULL DEFAULT 1,
+    template_schema JSON NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_mr_templates_specialty FOREIGN KEY (specialty_id) REFERENCES specialties(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 6. SERVICE CATALOG (Danh mục dịch vụ Cận lâm sàng - Default Room Mapping)
+CREATE TABLE IF NOT EXISTS service_catalog (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    clinic_id BIGINT UNSIGNED NOT NULL,
+    department_id BIGINT UNSIGNED NOT NULL,
+    code VARCHAR(100) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    service_type VARCHAR(50) NOT NULL, -- LABORATORY, IMAGING, FUNCTIONAL_TEST
+    price DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    payment_policy VARCHAR(30) NOT NULL DEFAULT 'PREPAID', -- PREPAID
+    default_room_id BIGINT UNSIGNED NULL, -- Phòng thực hiện cố định duy nhất của dịch vụ
+    result_template_id BIGINT UNSIGNED NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_services_clinic FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE CASCADE,
+    CONSTRAINT fk_services_dept FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE,
+    CONSTRAINT fk_services_room FOREIGN KEY (default_room_id) REFERENCES rooms(id) ON DELETE SET NULL,
+    CONSTRAINT fk_services_result_tpl FOREIGN KEY (result_template_id) REFERENCES result_templates(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 7. VISITS (Đợt khám ngoại trú)
+CREATE TABLE IF NOT EXISTS visits (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    visit_code VARCHAR(50) NOT NULL UNIQUE,
+    appointment_id BIGINT UNSIGNED NOT NULL,
+    patient_profile_id BIGINT UNSIGNED NOT NULL,
+    clinic_id BIGINT UNSIGNED NOT NULL,
+    primary_doctor_id BIGINT UNSIGNED NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE', -- CHECKED_IN, ACTIVE, COMPLETED, REFERRED, ADMITTED, CANCELLED
+    checked_in_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_visits_appointment FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_visits_patient FOREIGN KEY (patient_profile_id) REFERENCES patient_profiles(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_visits_doctor FOREIGN KEY (primary_doctor_id) REFERENCES doctors(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 8. ENCOUNTERS (Các lượt tương tác trong Visit)
+CREATE TABLE IF NOT EXISTS encounters (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    visit_id BIGINT UNSIGNED NOT NULL,
+    encounter_type VARCHAR(50) NOT NULL, -- INITIAL_CONSULTATION, FOLLOW_UP_CONSULTATION
+    room_id BIGINT UNSIGNED NOT NULL,
+    doctor_id BIGINT UNSIGNED NOT NULL,
+    queue_number VARCHAR(30) NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'WAITING', -- WAITING, IN_PROGRESS, COMPLETED, CANCELLED
+    started_at DATETIME NULL,
+    completed_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_encounters_visit FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE CASCADE,
+    CONSTRAINT fk_encounters_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_encounters_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 9. VITAL SIGNS (Chỉ số sinh tồn)
+CREATE TABLE IF NOT EXISTS vital_signs (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    visit_id BIGINT UNSIGNED NOT NULL,
+    encounter_id BIGINT UNSIGNED NOT NULL,
+    recorded_by BIGINT UNSIGNED NOT NULL,
+    height_cm DECIMAL(5,2) NULL,
+    weight_kg DECIMAL(5,2) NULL,
+    temperature_c DECIMAL(4,2) NULL,
+    heart_rate_bpm INT NULL,
+    respiratory_rate INT NULL,
+    systolic_bp INT NULL,
+    diastolic_bp INT NULL,
+    spo2 DECIMAL(4,1) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_vitals_visit FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE CASCADE,
+    CONSTRAINT fk_vitals_encounter FOREIGN KEY (encounter_id) REFERENCES encounters(id) ON DELETE CASCADE,
+    CONSTRAINT fk_vitals_user FOREIGN KEY (recorded_by) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 10. CLINICAL NOTES (Khám lâm sàng & bệnh sử)
+CREATE TABLE IF NOT EXISTS clinical_notes (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    visit_id BIGINT UNSIGNED NOT NULL,
+    encounter_id BIGINT UNSIGNED NOT NULL,
+    template_id BIGINT UNSIGNED NULL,
+    entered_by BIGINT UNSIGNED NOT NULL, -- Assistant hoặc Doctor
+    clinical_author_id BIGINT UNSIGNED NOT NULL, -- Doctor
+    status VARCHAR(30) NOT NULL DEFAULT 'DRAFT', -- DRAFT, FINAL
+    form_data JSON NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_notes_visit FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE CASCADE,
+    CONSTRAINT fk_notes_encounter FOREIGN KEY (encounter_id) REFERENCES encounters(id) ON DELETE CASCADE,
+    CONSTRAINT fk_notes_entered_by FOREIGN KEY (entered_by) REFERENCES users(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_notes_author FOREIGN KEY (clinical_author_id) REFERENCES doctors(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 11. CLINICAL ORDERS (Lần chỉ định CLS Round N)
+CREATE TABLE IF NOT EXISTS clinical_orders (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    order_code VARCHAR(50) NOT NULL UNIQUE,
+    visit_id BIGINT UNSIGNED NOT NULL,
+    encounter_id BIGINT UNSIGNED NOT NULL,
+    order_round INT NOT NULL DEFAULT 1,
+    ordered_by BIGINT UNSIGNED NOT NULL, -- Doctor
+    entered_by BIGINT UNSIGNED NOT NULL, -- Assistant hoặc Doctor
+    status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, COMPLETED, CANCELLED
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_orders_visit FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE CASCADE,
+    CONSTRAINT fk_orders_encounter FOREIGN KEY (encounter_id) REFERENCES encounters(id) ON DELETE CASCADE,
+    CONSTRAINT fk_orders_doctor FOREIGN KEY (ordered_by) REFERENCES doctors(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_orders_entered_by FOREIGN KEY (entered_by) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 12. SERVICE REQUESTS (Từng dịch vụ trong Order)
+CREATE TABLE IF NOT EXISTS service_requests (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    clinical_order_id BIGINT UNSIGNED NOT NULL,
+    visit_id BIGINT UNSIGNED NOT NULL,
+    service_id BIGINT UNSIGNED NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'ORDERED', -- ORDERED, IN_PROGRESS, COMPLETED, CANCELLED
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_sr_order FOREIGN KEY (clinical_order_id) REFERENCES clinical_orders(id) ON DELETE CASCADE,
+    CONSTRAINT fk_sr_visit FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE CASCADE,
+    CONSTRAINT fk_sr_service FOREIGN KEY (service_id) REFERENCES service_catalog(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 13. INVOICES & INVOICE ITEMS (Thanh toán dịch vụ)
+CREATE TABLE IF NOT EXISTS invoices (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    invoice_code VARCHAR(50) NOT NULL UNIQUE,
+    visit_id BIGINT UNSIGNED NULL,
+    appointment_id BIGINT UNSIGNED NULL,
+    patient_profile_id BIGINT UNSIGNED NOT NULL,
+    invoice_type VARCHAR(50) NOT NULL, -- APPOINTMENT_DEPOSIT, CLINICAL_SERVICE, FINAL_SETTLEMENT
+    total_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING', -- PENDING, PAID, CANCELLED
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    paid_at DATETIME NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_invoices_patient FOREIGN KEY (patient_profile_id) REFERENCES patient_profiles(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS invoice_items (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    invoice_id BIGINT UNSIGNED NOT NULL,
+    service_request_id BIGINT UNSIGNED NULL,
+    item_name VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    unit_price DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_inv_items_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
+    CONSTRAINT fk_inv_items_sr FOREIGN KEY (service_request_id) REFERENCES service_requests(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 14. SERVICE TASKS (Task thực hiện ở phòng CLS cố định)
+CREATE TABLE IF NOT EXISTS service_tasks (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    service_request_id BIGINT UNSIGNED NOT NULL,
+    invoice_id BIGINT UNSIGNED NOT NULL,
+    department_id BIGINT UNSIGNED NOT NULL,
+    room_id BIGINT UNSIGNED NOT NULL, -- Nhận giá trị trực tiếp từ service_catalog.default_room_id
+    queue_number VARCHAR(30) NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'BLOCKED', -- BLOCKED (chờ thanh toán), READY (đã thanh toán), IN_PROGRESS, COMPLETED
+    started_at DATETIME NULL,
+    completed_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_tasks_sr FOREIGN KEY (service_request_id) REFERENCES service_requests(id) ON DELETE CASCADE,
+    CONSTRAINT fk_tasks_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_tasks_dept FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_tasks_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 15. SERVICE RESULTS (Kết quả cận lâm sàng - Technician direct FINAL)
+CREATE TABLE IF NOT EXISTS service_results (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    service_request_id BIGINT UNSIGNED NOT NULL,
+    template_id BIGINT UNSIGNED NULL,
+    entered_by BIGINT UNSIGNED NOT NULL, -- Technician
+    status VARCHAR(30) NOT NULL DEFAULT 'FINAL', -- DRAFT, FINAL
+    findings TEXT NULL,
+    conclusion TEXT NULL,
+    result_data JSON NOT NULL,
+    finalized_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_results_sr FOREIGN KEY (service_request_id) REFERENCES service_requests(id) ON DELETE CASCADE,
+    CONSTRAINT fk_results_user FOREIGN KEY (entered_by) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 16. PRESCRIPTIONS & PRESCRIPTION ITEMS (Đơn thuốc điện tử)
+CREATE TABLE IF NOT EXISTS prescriptions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    prescription_code VARCHAR(50) NOT NULL UNIQUE,
+    visit_id BIGINT UNSIGNED NOT NULL,
+    encounter_id BIGINT UNSIGNED NOT NULL,
+    prescribed_by BIGINT UNSIGNED NOT NULL, -- Doctor
+    entered_by BIGINT UNSIGNED NOT NULL, -- Assistant / Doctor
+    diagnosis_note TEXT NULL,
+    total_estimated_cost DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    status VARCHAR(30) NOT NULL DEFAULT 'FINAL',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_presc_visit FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE CASCADE,
+    CONSTRAINT fk_presc_encounter FOREIGN KEY (encounter_id) REFERENCES encounters(id) ON DELETE CASCADE,
+    CONSTRAINT fk_presc_doctor FOREIGN KEY (prescribed_by) REFERENCES doctors(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS prescription_items (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    prescription_id BIGINT UNSIGNED NOT NULL,
+    drug_name VARCHAR(255) NOT NULL,
+    dosage VARCHAR(100) NOT NULL,
+    usage_instruction VARCHAR(500) NOT NULL,
+    quantity INT NOT NULL,
+    unit VARCHAR(50) NOT NULL,
+    unit_price DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_pi_prescription FOREIGN KEY (prescription_id) REFERENCES prescriptions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 17. VISIT DISPOSITIONS (Kết cục đợt khám)
+CREATE TABLE IF NOT EXISTS visit_dispositions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    visit_id BIGINT UNSIGNED NOT NULL UNIQUE,
+    disposition_type VARCHAR(50) NOT NULL, -- OUTPATIENT, REFERRED, ADMITTED
+    notes TEXT NULL,
+    destination_facility VARCHAR(255) NULL,
+    destination_department VARCHAR(255) NULL,
+    created_by BIGINT UNSIGNED NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_disp_visit FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

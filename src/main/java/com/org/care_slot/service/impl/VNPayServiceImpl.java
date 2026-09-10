@@ -34,6 +34,7 @@ public class VNPayServiceImpl implements VNPayService {
     private final AppointmentRepository appointmentRepository;
     private final AppointmentSlotRepository appointmentSlotRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
+    private final com.org.care_slot.repository.InvoiceRepository invoiceRepository;
     private final com.org.care_slot.service.BookingLogService bookingLogService;
 
     @Value("${vnpay.tmn-code}")
@@ -185,6 +186,7 @@ public class VNPayServiceImpl implements VNPayService {
                 slot.setStatus(SlotStatus.BOOKED);
                 appointmentSlotRepository.save(slot);
             }
+            updateDepositInvoiceStatus(appointment);
         } else {
             transaction.setStatus(PaymentStatus.FAILED);
             appointment.setStatus(AppointmentStatus.EXPIRED);
@@ -304,6 +306,7 @@ public class VNPayServiceImpl implements VNPayService {
                 slot.setStatus(SlotStatus.BOOKED);
                 appointmentSlotRepository.save(slot);
             }
+            updateDepositInvoiceStatus(appointment);
         } else {
             transaction.setStatus(PaymentStatus.FAILED);
             appointment.setStatus(AppointmentStatus.EXPIRED);
@@ -358,5 +361,14 @@ public class VNPayServiceImpl implements VNPayService {
                 .cancelledAt(appointment.getCancelledAt())
                 .checkedInAt(appointment.getCheckedInAt())
                 .build();
+    }
+
+    private void updateDepositInvoiceStatus(Appointment appointment) {
+        if (appointment == null) return;
+        invoiceRepository.findByAppointmentId(appointment.getId()).ifPresent(invoice -> {
+            invoice.setStatus("PAID");
+            invoice.setPaidAt(LocalDateTime.now());
+            invoiceRepository.save(invoice);
+        });
     }
 }
