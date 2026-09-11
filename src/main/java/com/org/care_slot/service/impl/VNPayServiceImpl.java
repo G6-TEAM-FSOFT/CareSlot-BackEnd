@@ -15,9 +15,12 @@ import com.org.care_slot.repository.AppointmentSlotRepository;
 import com.org.care_slot.repository.PaymentTransactionRepository;
 import com.org.care_slot.service.VNPayService;
 import com.org.care_slot.util.VNPayUtil;
+import com.org.care_slot.enums.AppointmentEventType;
+import com.org.care_slot.event.AppointmentEvent;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +39,7 @@ public class VNPayServiceImpl implements VNPayService {
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final com.org.care_slot.repository.InvoiceRepository invoiceRepository;
     private final com.org.care_slot.service.BookingLogService bookingLogService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${vnpay.tmn-code}")
     private String tmnCode;
@@ -166,7 +170,7 @@ public class VNPayServiceImpl implements VNPayService {
         Appointment appointment = transaction.getAppointment();
         AppointmentSlot slot = appointment.getSlot();
 
-        if (transaction.getStatus() != PaymentStatus.PENDING) {
+        if (transaction.getStatus() != PaymentStatus.PENDING || appointment.getStatus() != AppointmentStatus.PENDING_PAYMENT) {
             return mapToResponse(appointment);
         }
 
@@ -203,6 +207,7 @@ public class VNPayServiceImpl implements VNPayService {
 
         if ("00".equals(responseCode)) {
             bookingLogService.logEvent(savedAppointment, "PENDING_PAYMENT", "CONFIRMED", "PAYMENT_SUCCESS", "Thanh toán cọc thành công qua VNPAY, lịch hẹn đã được xác nhận", "PATIENT");
+            eventPublisher.publishEvent(new AppointmentEvent(savedAppointment.getId(), AppointmentEventType.CONFIRMATION));
         } else {
             bookingLogService.logEvent(savedAppointment, "PENDING_PAYMENT", "EXPIRED", "PAYMENT_FAILED", "Thanh toán tiền cọc thất bại qua VNPAY, lịch hẹn đã hết hạn", "PATIENT");
         }
@@ -282,7 +287,7 @@ public class VNPayServiceImpl implements VNPayService {
         }
 
         // Step 4: Idempotency check - Order already confirmed
-        if (transaction.getStatus() != PaymentStatus.PENDING) {
+        if (transaction.getStatus() != PaymentStatus.PENDING || appointment.getStatus() != AppointmentStatus.PENDING_PAYMENT) {
             return VNPayIpnResponse.builder()
                     .rspCode("02")
                     .message("Order already confirmed")
@@ -323,6 +328,7 @@ public class VNPayServiceImpl implements VNPayService {
 
         if ("00".equals(responseCode)) {
             bookingLogService.logEvent(savedAppointment, "PENDING_PAYMENT", "CONFIRMED", "PAYMENT_SUCCESS", "Thanh toán cọc thành công qua VNPAY (IPN), lịch hẹn đã được xác nhận", "PATIENT");
+            eventPublisher.publishEvent(new AppointmentEvent(savedAppointment.getId(), AppointmentEventType.CONFIRMATION));
         } else {
             bookingLogService.logEvent(savedAppointment, "PENDING_PAYMENT", "EXPIRED", "PAYMENT_FAILED", "Thanh toán tiền cọc thất bại qua VNPAY (IPN), lịch hẹn đã hết hạn", "PATIENT");
         }
