@@ -2,6 +2,8 @@ package com.org.care_slot.controller;
 
 import com.org.care_slot.dto.outpatient.*;
 import com.org.care_slot.dto.response.ApiResponse;
+import com.org.care_slot.dto.response.AppointmentSlotResponse;
+import jakarta.validation.Valid;
 import com.org.care_slot.service.OutpatientWorkflowService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,10 +24,17 @@ public class OutpatientWorkflowController {
     @PostMapping("/receptionist/check-in")
     @Operation(summary = "Lễ tân Check-in lịch hẹn (Tự động khởi tạo Visit và Initial Encounter)")
     public ResponseEntity<ApiResponse<VisitDetailResponse>> checkIn(
-            @RequestBody CheckInRequest request,
-            @RequestParam(defaultValue = "10") Long currentUserId) {
+            @Valid @RequestBody CheckInRequest request,
+            @RequestHeader("X-User-Id") Long currentUserId) {
         VisitDetailResponse response = outpatientWorkflowService.checkIn(request, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Check-in thành công. Đã tạo đợt khám ngoại trú (Visit).", response));
+    }
+
+    @GetMapping("/receptionist/appointments/{appointmentId}/replacement-slots")
+    public ResponseEntity<ApiResponse<List<AppointmentSlotResponse>>> getReplacementSlots(
+            @PathVariable Long appointmentId,
+            @RequestHeader("X-User-Id") Long currentUserId) {
+        return ResponseEntity.ok(ApiResponse.success(outpatientWorkflowService.getReplacementSlots(appointmentId, currentUserId)));
     }
 
     @PostMapping("/assistant/vital-signs")

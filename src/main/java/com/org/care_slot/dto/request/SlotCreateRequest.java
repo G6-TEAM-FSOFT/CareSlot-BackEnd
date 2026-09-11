@@ -24,5 +24,8 @@ public class SlotCreateRequest {
     @NotNull(message = "End time is required")
     private LocalTime endTime;
 
+    private Long roomId;
+    private String roomNumber;
+    // Legacy input: accepted only when it resolves to exactly one room in the clinic.
     private String roomName;
 }

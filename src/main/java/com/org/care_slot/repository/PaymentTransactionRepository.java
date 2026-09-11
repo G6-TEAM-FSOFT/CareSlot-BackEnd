@@ -9,4 +9,7 @@ import java.util.Optional;
 @Repository
 public interface PaymentTransactionRepository extends JpaRepository<PaymentTransaction, Long> {
     Optional<PaymentTransaction> findByTxnRef(String txnRef);
+    Optional<PaymentTransaction> findFirstByAppointmentIdAndStatusOrderByCreatedAtDesc(Long appointmentId,
+            com.org.care_slot.enums.PaymentStatus status);
+    Optional<PaymentTransaction> findFirstByAppointmentIdOrderByCreatedAtDesc(Long appointmentId);
 }

@@ -1,6 +1,7 @@
 package com.org.care_slot.service;
 
 import com.org.care_slot.dto.outpatient.*;
+import com.org.care_slot.dto.response.AppointmentSlotResponse;
 import com.org.care_slot.entity.Room;
 import com.org.care_slot.entity.ServiceCatalog;
 
@@ -8,6 +9,7 @@ import java.util.List;
 
 public interface OutpatientWorkflowService {
     VisitDetailResponse checkIn(CheckInRequest request, Long currentUserId);
+    List<AppointmentSlotResponse> getReplacementSlots(Long appointmentId, Long currentUserId);
     VisitDetailResponse recordVitalSigns(VitalSignRequest request, Long currentUserId);
     VisitDetailResponse saveClinicalNote(ClinicalNoteRequest request, Long currentUserId);
     VisitDetailResponse createClinicalOrder(ClinicalOrderRequest request, Long currentUserId);

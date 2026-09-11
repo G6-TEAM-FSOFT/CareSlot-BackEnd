@@ -22,6 +22,12 @@ public class Appointment extends BaseEntity {
     @Column(name = "booking_code", nullable = false, unique = true, length = 50)
     private String bookingCode;
 
+    @Column(name = "booking_user_id")
+    private Long bookingUserId;
+
+    @Column(name = "request_key", length = 80)
+    private String requestKey;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_profile_id", nullable = false)
     private PatientProfile patientProfile;

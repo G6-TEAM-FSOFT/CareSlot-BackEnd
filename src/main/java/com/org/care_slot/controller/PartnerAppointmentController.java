@@ -9,6 +9,8 @@ import com.org.care_slot.exception.AppException;
 import com.org.care_slot.exception.ErrorCode;
 import com.org.care_slot.service.AppointmentService;
 import com.org.care_slot.service.BookingLogService;
+import com.org.care_slot.service.OutpatientWorkflowService;
+import com.org.care_slot.dto.outpatient.CheckInRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +28,7 @@ public class PartnerAppointmentController {
 
     private final AppointmentService appointmentService;
     private final BookingLogService bookingLogService;
+    private final OutpatientWorkflowService outpatientWorkflowService;
 
     private Long getEffectiveClinicId(Long headerClinicId) {
         if (headerClinicId == null) {
@@ -74,10 +77,16 @@ public class PartnerAppointmentController {
     @PatchMapping("/{id}/check-in")
     public ResponseEntity<ApiResponse<AppointmentResponse>> checkInAppointment(
             @PathVariable Long id,
-            @RequestHeader(value = "X-Clinic-Id", required = false) Long headerClinicId
+            @RequestHeader(value = "X-Clinic-Id", required = false) Long headerClinicId,
+            @RequestHeader("X-User-Id") Long currentUserId,
+            @RequestBody(required = false) CheckInRequest request
     ) {
         Long clinicId = getEffectiveClinicId(headerClinicId);
-        AppointmentResponse result = appointmentService.checkInAppointment(clinicId, id, clinicId);
+        appointmentService.getPartnerAppointmentDetail(clinicId, id, clinicId);
+        if (request == null) request = CheckInRequest.builder().build();
+        request.setAppointmentId(id);
+        outpatientWorkflowService.checkIn(request, currentUserId);
+        AppointmentResponse result = appointmentService.getPartnerAppointmentDetail(clinicId, id, clinicId);
         return ResponseEntity.ok(ApiResponse.success("Xác nhận bệnh nhân đã đến khám (CHECKED_IN) thành công", result));
     }
 }

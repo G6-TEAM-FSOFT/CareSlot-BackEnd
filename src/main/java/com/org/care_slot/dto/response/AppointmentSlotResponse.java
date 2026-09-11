@@ -18,5 +18,7 @@ public class AppointmentSlotResponse {
     private LocalTime startTime;
     private LocalTime endTime;
     private String roomName;
+    private Long roomId;
+    private String roomNumber;
     private SlotStatus status;
 }
