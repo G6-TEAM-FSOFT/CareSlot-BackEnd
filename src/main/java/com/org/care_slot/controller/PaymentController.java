@@ -1,7 +1,7 @@
 package com.org.care_slot.controller;
 
 import com.org.care_slot.dto.response.ApiResponse;
-import com.org.care_slot.dto.response.AppointmentResponse;
+import com.org.care_slot.dto.response.PatientAppointmentResponse;
 import com.org.care_slot.exception.AppException;
 import com.org.care_slot.exception.ErrorCode;
 import com.org.care_slot.dto.response.VNPayIpnResponse;
@@ -53,7 +53,7 @@ public class PaymentController {
     public ResponseEntity<?> handleVNPayCallback(
             @RequestParam Map<String, String> params,
             HttpServletRequest request) {
-        AppointmentResponse response = vnPayService.handleCallback(params);
+        PatientAppointmentResponse response = vnPayService.handleCallback(params);
 
         String acceptHeader = request.getHeader("Accept");
         if (acceptHeader != null && acceptHeader.contains("text/html")) {

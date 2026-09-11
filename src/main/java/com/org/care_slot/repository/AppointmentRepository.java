@@ -15,6 +15,18 @@ import java.util.Optional;
 @Repository
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
 
+    Optional<Appointment> findByBookingUserIdAndRequestKey(Long bookingUserId, String requestKey);
+
+    @Query("SELECT a.slot.doctor.id, COUNT(a) FROM Appointment a WHERE " +
+           "a.slot.doctor.clinic.id = :clinicId AND a.slot.appointmentDate = :date AND " +
+           "(a.status IN (com.org.care_slot.enums.AppointmentStatus.CONFIRMED, " +
+           "com.org.care_slot.enums.AppointmentStatus.CHECKED_IN, com.org.care_slot.enums.AppointmentStatus.COMPLETED) " +
+           "OR (a.status = com.org.care_slot.enums.AppointmentStatus.PENDING_PAYMENT AND " +
+           "a.slot.status = com.org.care_slot.enums.SlotStatus.HELD AND a.slot.holdExpiresAt > :now)) " +
+           "GROUP BY a.slot.doctor.id")
+    java.util.List<Object[]> countDailyDoctorLoad(@Param("clinicId") Long clinicId,
+            @Param("date") LocalDate date, @Param("now") java.time.LocalDateTime now);
+
     Optional<Appointment> findByBookingCode(String bookingCode);
 
     @Query("SELECT a FROM Appointment a WHERE " +

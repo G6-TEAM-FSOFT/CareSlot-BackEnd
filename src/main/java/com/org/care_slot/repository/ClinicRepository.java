@@ -11,6 +11,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ClinicRepository extends JpaRepository<Clinic, Long> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Clinic c WHERE c.id = :id")
+    java.util.Optional<Clinic> findByIdForAllocation(@Param("id") Long id);
+
     @Query(value = "SELECT DISTINCT c FROM Clinic c " +
            "LEFT JOIN c.specialties s " +
            "WHERE c.status = 'ACTIVE' " +

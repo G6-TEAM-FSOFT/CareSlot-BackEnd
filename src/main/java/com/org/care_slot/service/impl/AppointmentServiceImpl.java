@@ -16,6 +16,7 @@ import com.org.care_slot.repository.AppointmentSlotRepository;
 import com.org.care_slot.repository.PatientProfileRepository;
 import com.org.care_slot.service.AppointmentService;
 import com.org.care_slot.service.BookingLogService;
+import com.org.care_slot.service.SlotAllocationService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +42,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final PatientProfileRepository patientProfileRepository;
     private final com.org.care_slot.repository.InvoiceRepository invoiceRepository;
     private final BookingLogService bookingLogService;
+    private final SlotAllocationService slotAllocationService;
 
     private static final BigDecimal DEFAULT_DEPOSIT_AMOUNT = new BigDecimal("100000.00");
 
@@ -53,36 +55,40 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .findByIdAndUserIdAndStatus(request.getPatientProfileId(), userId, "ACTIVE")
                 .orElseThrow(() -> new AppException(ErrorCode.PATIENT_PROFILE_NOT_FOUND));
 
-        AppointmentSlot slot = appointmentSlotRepository.findById(request.getSlotId())
-                .orElseThrow(() -> new AppException(ErrorCode.SLOT_NOT_FOUND));
-
-        if (slot.getStatus() != SlotStatus.AVAILABLE) {
-            throw new AppException(ErrorCode.SLOT_NOT_AVAILABLE);
+        if (request.getRequestKey() != null && !request.getRequestKey().isBlank()) {
+            java.util.Optional<Appointment> existingOpt = appointmentRepository.findByBookingUserIdAndRequestKey(userId, request.getRequestKey());
+            if (existingOpt.isPresent()) {
+                return mapToResponse(existingOpt.get());
+            }
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        slotAllocationService.lockClinic(request.getClinicId());
+
+        AppointmentSlot slot = slotAllocationService.allocate(
+                request.getClinicId(),
+                request.getSpecialtyId(),
+                request.getAppointmentDate(),
+                request.getStartTime(),
+                request.getEndTime()
+        );
+
+        LocalDateTime now = SlotAllocationService.now();
         LocalDateTime holdExpiresAt = now.plusMinutes(holdTimeoutMinutes);
 
-        int updatedRows = appointmentSlotRepository.holdSlotAtomic(slot.getId(), now, holdExpiresAt);
-        if (updatedRows == 0) {
-            throw new AppException(ErrorCode.SLOT_NOT_AVAILABLE);
-        }
-        slot = appointmentSlotRepository.findById(request.getSlotId())
-                .orElseThrow(() -> new AppException(ErrorCode.SLOT_NOT_FOUND));
+        slot.setStatus(SlotStatus.HELD);
+        slot.setHeldAt(now);
+        slot.setHoldExpiresAt(holdExpiresAt);
+        appointmentSlotRepository.save(slot);
 
         BigDecimal consultationFee = slot.getDoctor() != null ? slot.getDoctor().getConsultationFee() : BigDecimal.ZERO;
-
-        // US-11: Default deposit is 100,000 VNĐ if not provided or 0
-        BigDecimal depositAmount = request.getDepositAmount();
-        if (depositAmount == null || depositAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            depositAmount = DEFAULT_DEPOSIT_AMOUNT;
-        }
+        BigDecimal depositAmount = DEFAULT_DEPOSIT_AMOUNT;
 
         String bookingCode = generateBookingCode();
 
-        // Tạo Appointment ở trạng thái PENDING_PAYMENT để chờ thanh toán tiền cọc
         Appointment appointment = Appointment.builder()
                 .bookingCode(bookingCode)
+                .bookingUserId(userId)
+                .requestKey(request.getRequestKey())
                 .patientProfile(patientProfile)
                 .slot(slot)
                 .symptomNote(request.getSymptomNote())
@@ -93,7 +99,6 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         Appointment saved = appointmentRepository.save(appointment);
 
-        // Tạo Hóa đơn cọc (APPOINTMENT_DEPOSIT) ở trạng thái PENDING trong bảng invoices
         com.org.care_slot.entity.Invoice pendingInvoice = com.org.care_slot.entity.Invoice.builder()
                 .invoiceCode("INV-DEP-" + saved.getBookingCode())
                 .appointment(saved)
@@ -104,7 +109,6 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .build();
         invoiceRepository.save(pendingInvoice);
 
-        // US-24: Log appointment lifecycle event
         bookingLogService.logEvent(saved, null, "PENDING_PAYMENT", "APPOINTMENT_CREATED",
                 "Lịch hẹn đã được khởi tạo, đang chờ thanh toán tiền cọc", "PATIENT");
 
@@ -221,7 +225,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         Page<Appointment> page = appointmentRepository.findClinicAppointments(clinicId, status, doctorId, date,
                 pageable);
         List<AppointmentResponse> content = page.getContent().stream()
-                .map(this::mapToResponse)
+                .map(this::mapToStaffResponse)
                 .toList();
 
         return PageResponse.<AppointmentResponse>builder()
@@ -250,7 +254,7 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
         }
 
-        return mapToResponse(appointment);
+        return mapToStaffResponse(appointment);
     }
 
     @Override
@@ -294,7 +298,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         bookingLogService.logEvent(updated, previousStatus, "CHECKED_IN", "APPOINTMENT_CHECKED_IN",
                 "Patient checked in at clinic", "CLINIC_STAFF");
 
-        return mapToResponse(updated);
+        return mapToStaffResponse(updated);
     }
 
     private String generateBookingCode() {
@@ -304,16 +308,25 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     private AppointmentResponse mapToResponse(Appointment appointment) {
+        return mapToResponse(appointment, false);
+    }
+
+    private AppointmentResponse mapToStaffResponse(Appointment appointment) {
+        return mapToResponse(appointment, true);
+    }
+
+    private AppointmentResponse mapToResponse(Appointment appointment, boolean isStaff) {
         AppointmentSlot slot = appointment.getSlot();
         PatientProfile profile = appointment.getPatientProfile();
+        boolean visible = isStaff || appointment.getCheckedInAt() != null;
 
         return AppointmentResponse.builder()
                 .id(appointment.getId())
                 .bookingCode(appointment.getBookingCode())
                 .patientProfileId(profile != null ? profile.getId() : null)
                 .patientName(profile != null ? profile.getFullName() : null)
-                .doctorId(slot != null && slot.getDoctor() != null ? slot.getDoctor().getId() : null)
-                .doctorName(slot != null && slot.getDoctor() != null ? slot.getDoctor().getFullName() : null)
+                .doctorId((visible && slot != null && slot.getDoctor() != null) ? slot.getDoctor().getId() : null)
+                .doctorName((visible && slot != null && slot.getDoctor() != null) ? slot.getDoctor().getFullName() : null)
                 .clinicName(slot != null && slot.getDoctor() != null && slot.getDoctor().getClinic() != null
                         ? slot.getDoctor().getClinic().getName()
                         : null)
@@ -324,7 +337,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .appointmentDate(slot != null ? slot.getAppointmentDate() : null)
                 .startTime(slot != null ? slot.getStartTime() : null)
                 .endTime(slot != null ? slot.getEndTime() : null)
-                .roomName(slot != null ? slot.getRoomName() : null)
+                .roomName(visible && slot != null ? (slot.getRoom() != null ? slot.getRoom().getName() : slot.getRoomName()) : null)
                 .symptomNote(appointment.getSymptomNote())
                 .consultationFee(appointment.getConsultationFee())
                 .depositAmount(appointment.getDepositAmount())

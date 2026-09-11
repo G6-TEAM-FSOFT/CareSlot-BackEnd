@@ -6,6 +6,8 @@ import com.org.care_slot.enums.AppointmentStatus;
 import com.org.care_slot.exception.AppException;
 import com.org.care_slot.repository.*;
 import com.org.care_slot.service.OutpatientWorkflowService;
+import com.org.care_slot.service.ReceptionCheckInService;
+import com.org.care_slot.dto.response.AppointmentSlotResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 public class OutpatientWorkflowServiceImpl implements OutpatientWorkflowService {
 
     private final AppointmentRepository appointmentRepository;
+    private final ReceptionCheckInService receptionCheckInService;
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
     private final VisitRepository visitRepository;
@@ -42,80 +45,15 @@ public class OutpatientWorkflowServiceImpl implements OutpatientWorkflowService 
     private final MedicalRecordTemplateRepository medicalRecordTemplateRepository;
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public VisitDetailResponse checkIn(CheckInRequest request, Long currentUserId) {
-        Appointment appointment = appointmentRepository.findById(request.getAppointmentId())
-                .orElseThrow(() -> new AppException("Lịch hẹn không tồn tại: " + request.getAppointmentId()));
+        return getVisitDetail(receptionCheckInService.checkIn(request, currentUserId));
+    }
 
-        if (visitRepository.findByAppointmentId(appointment.getId()).isPresent()) {
-            return getVisitDetailByAppointmentId(appointment.getId());
-        }
-
-        appointment.setStatus(AppointmentStatus.CHECKED_IN);
-        appointment.setCheckedInAt(LocalDateTime.now());
-        appointmentRepository.save(appointment);
-
-        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String visitCode = "VIS-" + dateStr + "-" + String.format("%04d", (int)(Math.random() * 9000 + 1000));
-
-        Visit visit = Visit.builder()
-                .visitCode(visitCode)
-                .appointment(appointment)
-                .patientProfile(appointment.getPatientProfile())
-                .clinic(appointment.getSlot().getDoctor().getClinic())
-                .primaryDoctor(appointment.getSlot().getDoctor())
-                .status("ACTIVE")
-                .checkedInAt(LocalDateTime.now())
-                .build();
-        visitRepository.save(visit);
-
-        Invoice depositInvoice = invoiceRepository.findByAppointmentId(appointment.getId()).orElse(null);
-        if (depositInvoice != null) {
-            depositInvoice.setVisit(visit);
-            if (!"PAID".equals(depositInvoice.getStatus())) {
-                depositInvoice.setStatus("PAID");
-                if (depositInvoice.getPaidAt() == null) {
-                    depositInvoice.setPaidAt(LocalDateTime.now());
-                }
-            }
-            invoiceRepository.save(depositInvoice);
-        } else {
-            depositInvoice = Invoice.builder()
-                    .invoiceCode("INV-DEP-" + System.currentTimeMillis())
-                    .appointment(appointment)
-                    .visit(visit)
-                    .patientProfile(appointment.getPatientProfile())
-                    .invoiceType("APPOINTMENT_DEPOSIT")
-                    .totalAmount(appointment.getDepositAmount() != null ? appointment.getDepositAmount() : BigDecimal.ZERO)
-                    .status("PAID")
-                    .paidAt(LocalDateTime.now())
-                    .build();
-            invoiceRepository.save(depositInvoice);
-        }
-
-        Room room = appointment.getSlot().getRoom();
-        if (room == null) {
-            List<Room> rooms = roomRepository.findByClinicId(visit.getClinic().getId());
-            room = rooms.stream()
-                    .filter(r -> "CONSULTATION".equals(r.getRoomType()))
-                    .findFirst()
-                    .orElseThrow(() -> new AppException("Chưa cấu hình phòng khám cho cơ sở!"));
-        }
-
-        long count = encounterRepository.findByVisitIdOrderByCreatedAtAsc(visit.getId()).size() + 1;
-        String queueNo = "GASTRO-" + String.format("%03d", count);
-
-        Encounter encounter = Encounter.builder()
-                .visit(visit)
-                .encounterType("INITIAL_CONSULTATION")
-                .room(room)
-                .doctor(visit.getPrimaryDoctor())
-                .queueNumber(queueNo)
-                .status("WAITING")
-                .build();
-        encounterRepository.save(encounter);
-
-        return getVisitDetail(visit.getId());
+    @Override
+    @Transactional(readOnly = true)
+    public List<AppointmentSlotResponse> getReplacementSlots(Long appointmentId, Long currentUserId) {
+        return receptionCheckInService.getReplacementSlots(appointmentId, currentUserId);
     }
 
     @Override

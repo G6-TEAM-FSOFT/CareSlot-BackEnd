@@ -26,6 +26,7 @@ public enum ErrorCode {
     SLOT_ALREADY_HELD(3003, "Slot is currently held by another user", HttpStatus.CONFLICT),
     SLOT_TIME_OVERLAP(3004, "Doctor schedule overlaps with an existing slot", HttpStatus.CONFLICT),
     INVALID_SLOT_TIME(3005, "Slot start time must be before end time", HttpStatus.BAD_REQUEST),
+    SLOT_ALREADY_BOOKED(3006, "Slot is already booked", HttpStatus.BAD_REQUEST),
     APPOINTMENT_NOT_FOUND(4001, "Appointment not found", HttpStatus.NOT_FOUND),
     INVALID_APPOINTMENT_STATUS(4002, "Invalid appointment status transition", HttpStatus.BAD_REQUEST),
     CANNOT_CANCEL_PAST_START_TIME(4003, "Đã qua hoặc đến giờ khám, không thể hủy lịch hẹn", HttpStatus.BAD_REQUEST),

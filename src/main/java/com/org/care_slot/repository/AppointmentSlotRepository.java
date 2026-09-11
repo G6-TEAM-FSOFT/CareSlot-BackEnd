@@ -16,6 +16,23 @@ import java.util.List;
 @Repository
 public interface AppointmentSlotRepository extends JpaRepository<AppointmentSlot, Long> {
 
+       @Query("SELECT s FROM AppointmentSlot s JOIN FETCH s.doctor d JOIN FETCH d.clinic " +
+              "JOIN FETCH d.specialty JOIN FETCH s.room r WHERE d.clinic.id = :clinicId " +
+              "AND d.specialty.id = :specialtyId AND s.appointmentDate BETWEEN :fromDate AND :toDate " +
+              "AND s.status = com.org.care_slot.enums.SlotStatus.AVAILABLE " +
+              "AND d.status = 'ACTIVE' AND d.clinic.status = 'ACTIVE' AND d.specialty.status = 'ACTIVE' " +
+              "AND r.status = 'ACTIVE' AND r.clinic.id = :clinicId AND r.roomType = 'CONSULTATION' " +
+              "ORDER BY s.appointmentDate, s.startTime, s.endTime, d.id, s.id")
+       List<AppointmentSlot> findBookingCandidates(@Param("clinicId") Long clinicId,
+              @Param("specialtyId") Long specialtyId, @Param("fromDate") LocalDate fromDate,
+              @Param("toDate") LocalDate toDate);
+
+       @Query("SELECT s FROM AppointmentSlot s JOIN FETCH s.doctor LEFT JOIN FETCH s.room " +
+              "WHERE s.doctor.clinic.id = :clinicId AND s.appointmentDate BETWEEN :fromDate AND :toDate " +
+              "AND s.status IN (com.org.care_slot.enums.SlotStatus.HELD, com.org.care_slot.enums.SlotStatus.BOOKED)")
+       List<AppointmentSlot> findOccupiedSlots(@Param("clinicId") Long clinicId,
+              @Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate);
+
        @Query("SELECT s FROM AppointmentSlot s WHERE " +
                      "s.doctor.id = :doctorId AND " +
                      "(:date IS NULL OR s.appointmentDate = :date) AND " +
