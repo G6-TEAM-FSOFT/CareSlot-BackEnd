@@ -36,6 +36,7 @@ public class PartnerAppointmentController {
     private final BookingLogService bookingLogService;
     private final OutpatientWorkflowService outpatientWorkflowService;
     private final CurrentUserProvider currentUserProvider;
+    private final ReceptionCheckInService receptionCheckInService;
 
     private Long getEffectiveClinicId(Long headerClinicId) {
         if (headerClinicId != null) {
