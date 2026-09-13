@@ -78,4 +78,74 @@ VALUES
 (57, 1, '2026-09-14', '15:00:00', '15:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
 (58, 1, '2026-09-14', '15:20:00', '15:40:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
 (59, 1, '2026-09-14', '15:40:00', '16:00:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1)
+(20, 1, '2026-09-11', '09:00:00', '09:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(21, 1, '2026-09-11', '09:20:00', '09:40:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(22, 1, '2026-09-11', '09:40:00', '10:00:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(23, 1, '2026-09-11', '10:00:00', '10:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(24, 1, '2026-09-11', '10:20:00', '10:40:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(25, 1, '2026-09-11', '10:20:00', '10:40:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(26, 1, '2026-09-11', '17:00:00', '17:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(27, 1, '2026-09-11', '17:20:00', '17:40:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(28, 1, '2026-09-11', '17:40:00', '18:00:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(29, 1, '2026-09-12', '09:00:00', '09:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(30, 1, '2026-09-12', '09:20:00', '09:40:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(31, 1, '2026-09-12', '09:40:00', '10:00:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(32, 1, '2026-09-12', '10:00:00', '10:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(33, 1, '2026-09-12', '10:20:00', '10:40:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(34, 1, '2026-09-12', '10:20:00', '10:40:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(35, 1, '2026-09-12', '17:00:00', '17:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(36, 1, '2026-09-12', '17:20:00', '17:40:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(37, 1, '2026-09-12', '17:40:00', '18:00:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(38, 1, '2026-09-13', '09:00:00', '09:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(39, 1, '2026-09-13', '09:20:00', '09:40:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(40, 1, '2026-09-13', '09:40:00', '10:00:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(41, 1, '2026-09-13', '10:00:00', '10:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(42, 1, '2026-09-13', '10:20:00', '10:40:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(43, 1, '2026-09-13', '10:20:00', '10:40:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(44, 1, '2026-09-13', '17:00:00', '17:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(45, 1, '2026-09-13', '17:20:00', '17:40:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(46, 1, '2026-09-13', '17:40:00', '18:00:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(47, 1, '2026-09-13', '01:20:00', '01:40:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(48, 1, '2026-09-13', '01:40:00', '02:00:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(49, 1, '2026-09-13', '11:00:00', '11:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),
+(50, 1, '2026-09-13', '12:00:00', '12:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1)
 ON DUPLICATE KEY UPDATE status = VALUES(status), room_id = VALUES(room_id);
+
+-- 7. Thêm Phòng khám tư vấn riêng thứ 2 cho Chuyên khoa Tiêu Hóa (Phòng 306, Room ID = 6)
+INSERT INTO rooms (id, clinic_id, department_id, room_number, name, room_type, status)
+VALUES (6, 1, 1, '306', 'Phòng khám Tiêu Hóa 306', 'CONSULTATION', 'ACTIVE')
+ON DUPLICATE KEY UPDATE name = VALUES(name), room_type = VALUES(room_type), status = VALUES(status);
+
+-- 8. Thêm Bác sĩ thứ 2 chuyên khoa Tiêu Hóa: BS. Lê Thị Phương Thảo (Doctor ID = 11)
+INSERT INTO doctors (id, clinic_id, specialty_id, full_name, title, bio, avatar_url, consultation_fee, status)
+VALUES (11, 1, 4, 'BS. Lê Thị Phương Thảo', 'ThS.BS', 'Bác sĩ chuyên khoa Tiêu hóa Bệnh viện Đại học Y Hà Nội', NULL, 450000.00, 'ACTIVE')
+ON DUPLICATE KEY UPDATE 
+    full_name = VALUES(full_name),
+    title = VALUES(title),
+    specialty_id = VALUES(specialty_id),
+    consultation_fee = VALUES(consultation_fee),
+    status = VALUES(status);
+
+-- 9. Thêm User cho BS. Lê Thị Phương Thảo (User ID = 16)
+INSERT INTO users (id, email, password_hash, full_name, phone, role, clinic_id, status)
+VALUES (16, 'doctor.thao@careslot.vn', '123456', 'BS. Lê Thị Phương Thảo', '0900000016', 'DOCTOR', 1, 'ACTIVE')
+ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), role = VALUES(role), clinic_id = VALUES(clinic_id);
+
+-- 10. Tạo các Slot khám song song cho BS. Lê Thị Phương Thảo tại Phòng 306 (Room ID = 6)
+INSERT INTO appointment_slots (id, doctor_id, appointment_date, start_time, end_time, room_name, status, room_id)
+VALUES
+(49, 11, '2026-09-13', '01:20:00', '01:40:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(50, 11, '2026-09-13', '01:40:00', '02:00:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(51, 11, '2026-09-13', '09:00:00', '09:20:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(52, 11, '2026-09-13', '09:20:00', '09:40:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(53, 11, '2026-09-13', '09:40:00', '10:00:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(54, 11, '2026-09-13', '10:00:00', '10:20:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(55, 11, '2026-09-13', '10:20:00', '10:40:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(56, 11, '2026-09-13', '17:00:00', '17:20:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(57, 11, '2026-09-13', '17:20:00', '17:40:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(58, 11, '2026-09-13', '17:40:00', '18:00:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(59, 11, '2026-09-13', '11:00:00', '11:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 6),
+(60, 11, '2026-09-13', '12:00:00', '12:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 6)
+ON DUPLICATE KEY UPDATE status = VALUES(status), room_id = VALUES(room_id);
+
+
