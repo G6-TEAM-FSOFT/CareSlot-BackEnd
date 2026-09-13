@@ -13,6 +13,9 @@ import com.org.care_slot.repository.PatientProfileRepository;
 import com.org.care_slot.repository.UserRepository;
 import com.org.care_slot.service.PatientProfileService;
 import lombok.RequiredArgsConstructor;
+import com.org.care_slot.enums.RoleType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +28,29 @@ public class PatientProfileServiceImpl implements PatientProfileService {
 
     private final PatientProfileRepository patientProfileRepository;
     private final UserRepository userRepository;
+
+    private PatientProfile findPatientProfileByIdAndUser(Long id, Long userId) {
+        PatientProfile profile = patientProfileRepository.findById(id)
+                .filter(p -> "ACTIVE".equalsIgnoreCase(p.getStatus()))
+                .orElseThrow(() -> new AppException(ErrorCode.PATIENT_PROFILE_NOT_FOUND));
+
+        if (userId == null) {
+            return profile;
+        }
+
+        if (profile.getUser() != null && profile.getUser().getId().equals(userId)) {
+            return profile;
+        }
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof User currentUser) {
+            if (currentUser.getRole() != RoleType.PATIENT) {
+                return profile;
+            }
+        }
+
+        throw new AppException(ErrorCode.PATIENT_PROFILE_NOT_FOUND);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -41,8 +67,8 @@ public class PatientProfileServiceImpl implements PatientProfileService {
 
         profile.setFullName(request.getFullName().trim());
         profile.setDateOfBirth(request.getDateOfBirth());
-        profile.setGender(request.getGender().trim());
-        profile.setPhone(request.getPhone().trim());
+        profile.setGender(request.getGender() != null ? request.getGender().trim() : "MALE");
+        profile.setPhone(request.getPhone() != null ? request.getPhone().trim() : "");
         if (request.getIdentityCard() != null) profile.setIdentityCard(request.getIdentityCard().trim());
         if (request.getCardIssueDate() != null) profile.setCardIssueDate(request.getCardIssueDate());
         if (request.getEthnicity() != null) profile.setEthnicity(request.getEthnicity().trim());
@@ -50,7 +76,16 @@ public class PatientProfileServiceImpl implements PatientProfileService {
         if (request.getOccupation() != null) profile.setOccupation(request.getOccupation().trim());
         if (request.getAddress() != null) profile.setAddress(request.getAddress().trim());
 
-        // Không thay đổi: user, profileType, relationship, status
+        // Đồng bộ lên User
+        User user = profile.getUser();
+        if (user != null) {
+            user.setFullName(profile.getFullName());
+            if (profile.getPhone() != null && !profile.getPhone().isBlank()) {
+                user.setPhone(profile.getPhone());
+            }
+            userRepository.save(user);
+        }
+
         PatientProfile updated = patientProfileRepository.save(profile);
         return mapToResponse(updated);
     }
@@ -66,8 +101,7 @@ public class PatientProfileServiceImpl implements PatientProfileService {
     @Override
     @Transactional(readOnly = true)
     public PatientProfileResponse getPatientProfileDetail(Long id, Long userId) {
-        PatientProfile profile = patientProfileRepository.findByIdAndUserIdAndStatus(id, userId, "ACTIVE")
-                .orElseThrow(() -> new AppException(ErrorCode.PATIENT_PROFILE_NOT_FOUND));
+        PatientProfile profile = findPatientProfileByIdAndUser(id, userId);
         return mapToResponse(profile);
     }
 
@@ -108,13 +142,22 @@ public class PatientProfileServiceImpl implements PatientProfileService {
                 .build();
 
         PatientProfile saved = patientProfileRepository.save(profile);
+
+        // Nếu tạo hồ sơ SELF -> Cập nhật tên/sĐT cho User nếu chưa có
+        if (profileType == ProfileType.PRIMARY) {
+            user.setFullName(saved.getFullName());
+            if (saved.getPhone() != null && !saved.getPhone().isBlank()) {
+                user.setPhone(saved.getPhone());
+            }
+            userRepository.save(user);
+        }
+
         return mapToResponse(saved);
     }
 
     @Override
     public PatientProfileResponse updatePatientProfile(Long id, Long userId, PatientProfileUpdateRequest request) {
-        PatientProfile profile = patientProfileRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.PATIENT_PROFILE_NOT_FOUND));
+        PatientProfile profile = findPatientProfileByIdAndUser(id, userId);
 
         if (request.getFullName() != null && !request.getFullName().isBlank()) {
             profile.setFullName(request.getFullName().trim());
@@ -129,9 +172,38 @@ public class PatientProfileServiceImpl implements PatientProfileService {
         if (request.getOccupation() != null) profile.setOccupation(request.getOccupation().trim());
         if (request.getAddress() != null) profile.setAddress(request.getAddress().trim());
 
-        if (request.getRelationship() != null && !request.getRelationship().isBlank()) {
+        // Bảo toàn thuộc tính PRIMARY nếu là hồ sơ Chủ tài khoản
+        if (profile.getProfileType() == ProfileType.PRIMARY || "SELF".equalsIgnoreCase(profile.getRelationship())) {
+            profile.setRelationship("SELF");
+            profile.setProfileType(ProfileType.PRIMARY);
+        } else if (request.getRelationship() != null && !request.getRelationship().isBlank()) {
             String rel = request.getRelationship().trim().toUpperCase();
-            profile.setRelationship(rel);
+            if ("SELF".equals(rel)) {
+                boolean hasPrimary = patientProfileRepository
+                        .findByUserIdAndProfileTypeAndStatus(userId, ProfileType.PRIMARY, "ACTIVE")
+                        .filter(p -> !p.getId().equals(id))
+                        .isPresent();
+                if (hasPrimary) {
+                    throw new AppException(ErrorCode.PRIMARY_PROFILE_ALREADY_EXISTS);
+                }
+                profile.setProfileType(ProfileType.PRIMARY);
+                profile.setRelationship("SELF");
+            } else {
+                profile.setRelationship(rel);
+                profile.setProfileType(ProfileType.FAMILY);
+            }
+        }
+
+        // Nếu là hồ sơ Chủ tài khoản -> Đồng bộ dữ liệu tên & SĐT với bảng users
+        if (profile.getProfileType() == ProfileType.PRIMARY) {
+            User user = profile.getUser();
+            if (user != null) {
+                user.setFullName(profile.getFullName());
+                if (profile.getPhone() != null && !profile.getPhone().isBlank()) {
+                    user.setPhone(profile.getPhone());
+                }
+                userRepository.save(user);
+            }
         }
 
         PatientProfile updated = patientProfileRepository.save(profile);
@@ -140,8 +212,7 @@ public class PatientProfileServiceImpl implements PatientProfileService {
 
     @Override
     public void deletePatientProfile(Long id, Long userId) {
-        PatientProfile profile = patientProfileRepository.findByIdAndUserIdAndStatus(id, userId, "ACTIVE")
-                .orElseThrow(() -> new AppException(ErrorCode.PATIENT_PROFILE_NOT_FOUND));
+        PatientProfile profile = findPatientProfileByIdAndUser(id, userId);
 
         // Không cho phép xóa hồ sơ Chủ tài khoản
         if (profile.getProfileType() == ProfileType.PRIMARY || "SELF".equalsIgnoreCase(profile.getRelationship())) {

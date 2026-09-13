@@ -7,6 +7,7 @@ import com.org.care_slot.enums.AppointmentStatus;
 import com.org.care_slot.enums.RoleType;
 import com.org.care_slot.enums.SlotStatus;
 import com.org.care_slot.exception.AppException;
+import com.org.care_slot.exception.ErrorCode;
 import com.org.care_slot.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -98,12 +99,60 @@ public class ReceptionCheckInService {
         return visit.getId();
     }
 
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+    public Appointment reassignDoctor(Long appointmentId, Long replacementSlotId, String reason, Long currentUserId) {
+        User actor = requireStaff(currentUserId);
+        allocationService.lockClinic(actor.getClinic().getId());
+        Appointment appointment = requireAppointment(appointmentId, actor);
+        if (appointment.getStatus() != AppointmentStatus.CONFIRMED) {
+            throw new AppException(ErrorCode.INVALID_APPOINTMENT_STATUS, "Chỉ có thể điều phối lại bác sĩ khi lịch hẹn ở trạng thái đã xác nhận (CONFIRMED).");
+        }
+        if (replacementSlotId == null) {
+            throw new AppException(ErrorCode.SLOT_NOT_FOUND, "Vui lòng chọn slot bác sĩ thay thế.");
+        }
+        AppointmentSlot original = appointment.getSlot();
+        if (replacementSlotId.equals(original.getId())) {
+            throw new AppException(ErrorCode.SLOT_NOT_AVAILABLE, "Slot thay thế phải khác slot hiện tại.");
+        }
+
+        String changeReason = (reason != null && !reason.isBlank())
+                ? reason.trim()
+                : "Clinic Partner điều phối lại bác sĩ";
+
+        AppointmentSlot assigned = slotRepository.findById(replacementSlotId)
+                .orElseThrow(() -> new AppException(ErrorCode.SLOT_NOT_FOUND, "Slot thay thế không tồn tại."));
+        if (!matchesReplacement(original, assigned)) {
+            throw new AppException(ErrorCode.SLOT_NOT_AVAILABLE, "Slot thay thế phải cùng cơ sở, chuyên khoa, ngày và khung giờ đã đặt.");
+        }
+        allocationService.validateCandidate(assigned, original.getId());
+        assigned.setStatus(SlotStatus.BOOKED);
+        assigned.setHeldAt(null);
+        assigned.setHoldExpiresAt(null);
+        slotRepository.save(assigned);
+
+        original.setStatus(SlotStatus.OVER_DATE);
+        original.setHeldAt(null);
+        original.setHoldExpiresAt(null);
+        slotRepository.save(original);
+
+        appointment.setSlot(assigned);
+        appointment.setConsultationFee(assigned.getDoctor().getConsultationFee());
+        appointmentRepository.save(appointment);
+
+        String actorTag = actor.getRole() != null ? actor.getRole().name() + "_" + actor.getId() : "STAFF_" + actor.getId();
+        bookingLogService.logEvent(appointment, "CONFIRMED", "CONFIRMED", "ASSIGNMENT_CHANGED",
+                "Old " + describe(original) + "; new " + describe(assigned) + "; reason=" + changeReason,
+                actorTag);
+
+        return appointment;
+    }
+
     @Transactional(readOnly = true)
     public List<AppointmentSlotResponse> getReplacementSlots(Long appointmentId, Long currentUserId) {
         User actor = requireStaff(currentUserId);
         Appointment appointment = requireAppointment(appointmentId, actor);
         if (appointment.getStatus() != AppointmentStatus.CONFIRMED) {
-            throw new AppException("Chỉ đổi phân công trước khi hoàn tất check-in.");
+            throw new AppException(ErrorCode.INVALID_APPOINTMENT_STATUS, "Chỉ đổi phân công trước khi hoàn tất check-in (Lịch hẹn phải ở trạng thái CONFIRMED).");
         }
         AppointmentSlot original = appointment.getSlot();
         return slotRepository.findClinicSlots(actor.getClinic().getId(), null,
@@ -137,7 +186,8 @@ public class ReceptionCheckInService {
                 .orElseThrow(() -> new AppException("Nhân viên không tồn tại."));
         if (actor.getClinic() == null || !"ACTIVE".equals(actor.getStatus())
                 || !(actor.getRole() == RoleType.RECEPTIONIST || actor.getRole() == RoleType.CLINIC_STAFF
-                || actor.getRole() == RoleType.CLINIC_PARTNER || actor.getRole() == RoleType.CLINIC_ADMIN)) {
+                || actor.getRole() == RoleType.CLINIC_PARTNER || actor.getRole() == RoleType.CLINIC_ADMIN
+                || actor.getRole() == RoleType.ADMIN)) {
             throw new AppException("Chỉ nhân viên tiếp đón thuộc cơ sở được thực hiện thao tác này.");
         }
         return actor;

@@ -1,7 +1,10 @@
 package com.org.care_slot.controller;
 
+import com.org.care_slot.dto.outpatient.CheckInRequest;
+import com.org.care_slot.dto.request.ReassignDoctorRequest;
 import com.org.care_slot.dto.response.ApiResponse;
 import com.org.care_slot.dto.response.AppointmentResponse;
+import com.org.care_slot.dto.response.AppointmentSlotResponse;
 import com.org.care_slot.dto.response.BookingLogResponse;
 import com.org.care_slot.dto.response.PageResponse;
 import com.org.care_slot.enums.AppointmentStatus;
@@ -10,7 +13,8 @@ import com.org.care_slot.exception.ErrorCode;
 import com.org.care_slot.service.AppointmentService;
 import com.org.care_slot.service.BookingLogService;
 import com.org.care_slot.service.OutpatientWorkflowService;
-import com.org.care_slot.dto.outpatient.CheckInRequest;
+import com.org.care_slot.service.ReceptionCheckInService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +25,8 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.org.care_slot.security.CurrentUserProvider;
+
 @RestController
 @RequestMapping("/api/v1/partner/appointments")
 @RequiredArgsConstructor
@@ -29,12 +35,29 @@ public class PartnerAppointmentController {
     private final AppointmentService appointmentService;
     private final BookingLogService bookingLogService;
     private final OutpatientWorkflowService outpatientWorkflowService;
+    private final CurrentUserProvider currentUserProvider;
+    private final ReceptionCheckInService receptionCheckInService;
 
     private Long getEffectiveClinicId(Long headerClinicId) {
-        if (headerClinicId == null) {
+        if (headerClinicId != null) {
+            return headerClinicId;
+        }
+        try {
+            return currentUserProvider.getCurrentClinicId();
+        } catch (Exception e) {
             throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
         }
-        return headerClinicId;
+    }
+
+    private Long getEffectiveUserId(Long headerUserId) {
+        if (headerUserId != null) {
+            return headerUserId;
+        }
+        try {
+            return currentUserProvider.getCurrentUser().getId();
+        } catch (Exception e) {
+            return 1L;
+        }
     }
 
     @GetMapping
@@ -74,14 +97,41 @@ public class PartnerAppointmentController {
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
+    @GetMapping("/{id}/replacement-slots")
+    public ResponseEntity<ApiResponse<List<AppointmentSlotResponse>>> getReplacementSlots(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Clinic-Id", required = false) Long headerClinicId,
+            @RequestHeader("X-User-Id") Long currentUserId
+    ) {
+        Long clinicId = getEffectiveClinicId(headerClinicId);
+        appointmentService.getPartnerAppointmentDetail(clinicId, id, clinicId);
+        List<AppointmentSlotResponse> result = receptionCheckInService.getReplacementSlots(id, currentUserId);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @PatchMapping("/{id}/reassign")
+    public ResponseEntity<ApiResponse<AppointmentResponse>> reassignAppointment(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Clinic-Id", required = false) Long headerClinicId,
+            @RequestHeader("X-User-Id") Long currentUserId,
+            @Valid @RequestBody ReassignDoctorRequest request
+    ) {
+        Long clinicId = getEffectiveClinicId(headerClinicId);
+        appointmentService.getPartnerAppointmentDetail(clinicId, id, clinicId);
+        receptionCheckInService.reassignDoctor(id, request.getReplacementSlotId(), request.getReason(), currentUserId);
+        AppointmentResponse result = appointmentService.getPartnerAppointmentDetail(clinicId, id, clinicId);
+        return ResponseEntity.ok(ApiResponse.success("Điều phối lại Bác sĩ thành công", result));
+    }
+
     @PatchMapping("/{id}/check-in")
     public ResponseEntity<ApiResponse<AppointmentResponse>> checkInAppointment(
             @PathVariable Long id,
             @RequestHeader(value = "X-Clinic-Id", required = false) Long headerClinicId,
-            @RequestHeader("X-User-Id") Long currentUserId,
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
             @RequestBody(required = false) CheckInRequest request
     ) {
         Long clinicId = getEffectiveClinicId(headerClinicId);
+        Long currentUserId = getEffectiveUserId(headerUserId);
         appointmentService.getPartnerAppointmentDetail(clinicId, id, clinicId);
         if (request == null) request = CheckInRequest.builder().build();
         request.setAppointmentId(id);

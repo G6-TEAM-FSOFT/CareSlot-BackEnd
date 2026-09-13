@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Hóa Đơn Thanh Toán Lượt Khám</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm 20mm 15mm 20mm;
+        }
+        body {
+            font-family: 'Roboto', 'Times New Roman', serif;
+            font-size: 13px;
+            line-height: 1.4;
+            color: #000;
+        }
+        .header-table {
+            width: 100%;
+            margin-bottom: 15px;
+            border-collapse: collapse;
+        }
+        .header-table td {
+            vertical-align: top;
+        }
+        .title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 15px 0 5px 0;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 12px;
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+        .field-row {
+            margin-bottom: 6px;
+        }
+        .field-value {
+            font-weight: bold;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        .items-table th, .items-table td {
+            border: 1px solid #333;
+            padding: 6px 8px;
+            text-align: left;
+        }
+        .items-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: center;
+        }
+        .footer-table {
+            width: 100%;
+            margin-top: 30px;
+            border-collapse: collapse;
+            text-align: center;
+        }
+        .total-box {
+            font-size: 14px;
+            font-weight: bold;
+            text-align: right;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <table class="header-table">
+        <tr>
+            <td style="width: 50%; text-align: left;">
+                <div style="font-weight: bold;" th:text="${data.clinicName}">Phòng khám CareSlot</div>
+                <div>Địa chỉ: Cơ sở y tế CareSlot</div>
+            </td>
+            <td style="width: 50%; text-align: right;">
+                <div>Mã hóa đơn: <span class="field-value" th:text="${data.invoiceCode}">INV-001</span></div>
+                <div>Lượt khám: <span class="field-value" th:text="${data.visitId}">VIS-001</span></div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="title">HÓA ĐƠN THANH TOÁN DỊCH VỤ Y TẾ</div>
+    <div class="subtitle" th:text="${'Loại hóa đơn: ' + data.invoiceType + ' | Trạng thái: ' + data.status}">Trạng thái: PAID</div>
+
+    <div class="field-row">
+        - Họ và tên người bệnh: <span class="field-value" th:text="${data.patientName}">NGUYỄN VĂN A</span>
+        <span style="margin-left: 40px;">Tuổi: <span class="field-value" th:text="${data.age}">30</span></span>
+        <span style="margin-left: 30px;">Giới tính: <span class="field-value" th:text="${data.gender}">Nam</span></span>
+    </div>
+
+    <div class="field-row">
+        - Số điện thoại: <span class="field-value" th:text="${data.phone != null ? data.phone : '-'}">0901234567</span>
+        <span style="margin-left: 40px;">Địa chỉ: <span class="field-value" th:text="${data.address}">Hà Nội</span></span>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width: 8%;">STT</th>
+                <th>Tên Dịch Vụ / Thuốc / Chi Phí</th>
+                <th style="width: 12%;">Số Lượng</th>
+                <th style="width: 20%;">Đơn Giá (VNĐ)</th>
+                <th style="width: 25%;">Thành Tiền (VNĐ)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="item : ${data.items}">
+                <td style="text-align: center;" th:text="${item.index}">1</td>
+                <td th:text="${item.itemName}">Dịch vụ khám</td>
+                <td style="text-align: center;" th:text="${item.quantity}">1</td>
+                <td style="text-align: right;" th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 0, 'POINT')}">150.000</td>
+                <td style="text-align: right; font-weight: bold;" th:text="${#numbers.formatDecimal(item.amount, 0, 'COMMA', 0, 'POINT')}">150.000</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="total-box">
+        TỔNG CỘNG THANH TOÁN: <span th:text="${#numbers.formatDecimal(data.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">150.000 VNĐ</span>
+    </div>
+
+    <table class="footer-table">
+        <tr>
+            <td style="width: 50%;">
+                <div style="font-weight: bold;">NGƯỜI NỘP TIỀN</div>
+                <div style="margin-top: 50px; font-style: italic;">(Ký và ghi rõ họ tên)</div>
+            </td>
+            <td style="width: 50%;">
+                <div><i>Ngày ..... tháng ..... năm 20...</i></div>
+                <div style="font-weight: bold; margin-top: 5px;">THU NGÂN / THỦ QUỸ</div>
+                <div style="margin-top: 50px; font-weight: bold;">Xác nhận đã thanh toán</div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
