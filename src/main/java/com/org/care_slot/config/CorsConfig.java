@@ -20,7 +20,8 @@ public class CorsConfig implements WebMvcConfigurer {
                 "http://localhost:5173",
                 "http://localhost:3000",
                 "http://127.0.0.1:5173",
-                "https://elog.click"
+                "https://elog.click",
+                "https://www.elog.click"
         ));
         if (frontendUrl != null && !frontendUrl.isBlank() && !origins.contains(frontendUrl)) {
             origins.add(frontendUrl);
@@ -28,7 +29,7 @@ public class CorsConfig implements WebMvcConfigurer {
 
         registry.addMapping("/**")
                 .allowedOrigins(origins.toArray(new String[0]))
-                .allowedOriginPatterns("https://*.vercel.app")
+                .allowedOriginPatterns("https://*.vercel.app", "https://*.elog.click")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)

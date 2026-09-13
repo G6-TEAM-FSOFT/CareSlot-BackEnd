@@ -105,16 +105,20 @@ public class SecurityConfig {
                 "http://localhost:5173",
                 "http://localhost:3000",
                 "http://127.0.0.1:5173",
-                "https://elog.click"
+                "https://elog.click",
+                "https://www.elog.click"
         ));
         if (frontendUrl != null && !frontendUrl.isBlank() && !origins.contains(frontendUrl)) {
             origins.add(frontendUrl);
         }
 
         configuration.setAllowedOrigins(origins);
-        configuration.setAllowedOriginPatterns(List.of("https://*.vercel.app"));
+        configuration.setAllowedOriginPatterns(List.of(
+                "https://*.vercel.app",
+                "https://*.elog.click"
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-XSRF-TOKEN", "Accept", "X-Requested-With"));
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Set-Cookie", "Content-Disposition", "X-XSRF-TOKEN"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
