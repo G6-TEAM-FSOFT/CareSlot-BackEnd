@@ -29,6 +29,7 @@ public class DoctorServiceImpl implements DoctorService {
     private final DoctorRepository doctorRepository;
     private final ClinicRepository clinicRepository;
     private final SpecialtyRepository specialtyRepository;
+    private final com.org.care_slot.service.S3Service s3Service;
 
     @Override
     public PageResponse<DoctorResponse> filterDoctors(Long specialtyId, Long clinicId, String keyword, BigDecimal minFee, BigDecimal maxFee, Pageable pageable) {
@@ -213,6 +214,9 @@ public class DoctorServiceImpl implements DoctorService {
             doctor.setBio(request.getBio());
         }
         if (request.getAvatarUrl() != null) {
+            if (doctor.getAvatarUrl() != null && !doctor.getAvatarUrl().equals(request.getAvatarUrl())) {
+                s3Service.deleteFile(doctor.getAvatarUrl());
+            }
             doctor.setAvatarUrl(request.getAvatarUrl());
         }
         if (request.getConsultationFee() != null) {
@@ -242,6 +246,33 @@ public class DoctorServiceImpl implements DoctorService {
 
         doctor.setStatus(status);
         Doctor updated = doctorRepository.save(doctor);
+        return getDoctorDetail(updated.getId());
+    }
+
+    @Override
+    @Transactional
+    public DoctorDetailResponse uploadDoctorAvatar(Long clinicId, Long doctorId, org.springframework.web.multipart.MultipartFile file, Long staffClinicId) {
+        if (staffClinicId == null || !staffClinicId.equals(clinicId)) {
+            throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
+        }
+
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new AppException(ErrorCode.DOCTOR_NOT_FOUND));
+
+        if (!doctor.getClinic().getId().equals(clinicId)) {
+            throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
+        }
+
+        String oldAvatar = doctor.getAvatarUrl();
+        com.org.care_slot.dto.response.FileUploadResponse uploadResponse = s3Service.uploadImage(file, "doctors");
+
+        doctor.setAvatarUrl(uploadResponse.getUrl());
+        Doctor updated = doctorRepository.save(doctor);
+
+        if (oldAvatar != null && !oldAvatar.isEmpty() && !oldAvatar.equals(uploadResponse.getUrl())) {
+            s3Service.deleteFile(oldAvatar);
+        }
+
         return getDoctorDetail(updated.getId());
     }
 

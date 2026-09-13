@@ -26,15 +26,23 @@ ON DUPLICATE KEY UPDATE
 INSERT INTO users (id, email, password_hash, full_name, phone, role, clinic_id, status)
 VALUES
 (14, 'doctor.minh@careslot.vn', '123456', 'BS. Trần Hoàng Minh', '0900000014', 'DOCTOR', 1, 'ACTIVE'),
-(15, 'nguyenminhanh@example.com', '123456', 'Nguyễn Minh Anh', '0901234567', 'PATIENT', NULL, 'ACTIVE')
-ON DUPLICATE KEY UPDATE full_name = VALUES(full_name);
+(15, 'nguyenminhanh@example.com', '123456', 'Nguyễn Minh Anh', '0901234567', 'PATIENT', NULL, 'ACTIVE'),
+(16, 'doctor.minhkhai@careslot.vn', '123456', 'TS.BS Nguyễn Thị Minh Khai', '0900000016', 'DOCTOR', 1, 'ACTIVE'),
+(17, 'doctor.bac@careslot.vn', '123456', 'BS. Nguyễn Hoài Bắc', '0900000017', 'DOCTOR', 1, 'ACTIVE')
+ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), role = VALUES(role), clinic_id = VALUES(clinic_id);
 
 -- 5. Thêm Patient Profile cho Bệnh nhân Nguyễn Minh Anh (Profile ID = 10)
 INSERT INTO patient_profiles (id, user_id, full_name, date_of_birth, gender, phone, relationship, status)
 VALUES (10, 15, 'Nguyễn Minh Anh', '1988-06-15', 'MALE', '0901234567', 'SELF', 'ACTIVE')
 ON DUPLICATE KEY UPDATE full_name = VALUES(full_name);
 
--- 6. Tạo các Slot khám ngày 09/09/2026 cho BS. Trần Hoàng Minh tại Phòng 305 (Room ID = 1)
+-- 6. Thêm phòng khám Consultation
+INSERT INTO rooms (id, clinic_id, department_id, room_number, name, room_type, status) VALUES
+(6, 1, 1, '201', 'Phòng khám Sản 201', 'CONSULTATION', 'ACTIVE'),
+(7, 1, 1, '202', 'Phòng khám Nam học 202', 'CONSULTATION', 'ACTIVE')
+ON DUPLICATE KEY UPDATE name = VALUES(name), room_type = VALUES(room_type), status = VALUES(status);
+
+-- 7. Tạo các Slot khám từ 11/09/2026 đến 24/09/2026 (14 ngày)
 INSERT INTO appointment_slots (id, doctor_id, appointment_date, start_time, end_time, room_name, status, room_id)
 VALUES
 (20, 1, '2026-09-13', '09:00:00', '09:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 1),

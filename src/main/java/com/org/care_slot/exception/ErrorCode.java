@@ -34,7 +34,11 @@ public enum ErrorCode {
     PAYMENT_FAILED(5001, "Payment processing failed", HttpStatus.PAYMENT_REQUIRED),
     INVALID_EXCEL_FILE(6001, "Invalid Excel file format or data", HttpStatus.BAD_REQUEST),
     INVALID_PAYMENT_SIGNATURE(5002, "Invalid payment signature", HttpStatus.BAD_REQUEST),
-    TRANSACTION_NOT_FOUND(5003, "Payment transaction not found", HttpStatus.NOT_FOUND);
+    TRANSACTION_NOT_FOUND(5003, "Payment transaction not found", HttpStatus.NOT_FOUND),
+    FILE_EMPTY(7001, "File cannot be empty", HttpStatus.BAD_REQUEST),
+    INVALID_FILE_TYPE(7002, "Only image files (JPEG, PNG, WEBP, GIF) are allowed", HttpStatus.BAD_REQUEST),
+    FILE_SIZE_EXCEEDED(7003, "File size exceeds allowable limit (10MB)", HttpStatus.BAD_REQUEST),
+    FILE_UPLOAD_FAILED(7004, "Failed to upload file to S3", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final int code;
     private final String message;

@@ -94,4 +94,15 @@ public class PartnerDoctorController {
         DoctorDetailResponse result = doctorService.updateDoctorStatus(clinicId, id, status, clinicId);
         return ResponseEntity.ok(ApiResponse.success("Updated doctor status successfully", result));
     }
+
+    @PostMapping(value = "/{id}/avatar", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<DoctorDetailResponse>> uploadDoctorAvatar(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Clinic-Id", required = false) Long headerClinicId,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file
+    ) {
+        Long clinicId = getEffectiveClinicId(headerClinicId);
+        DoctorDetailResponse result = doctorService.uploadDoctorAvatar(clinicId, id, file, clinicId);
+        return ResponseEntity.ok(ApiResponse.success("Uploaded doctor avatar successfully", result));
+    }
 }
