@@ -41,4 +41,8 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 
     @Query("SELECT d FROM Doctor d WHERE d.clinic.id IN :clinicIds AND d.status = 'ACTIVE'")
     java.util.List<Doctor> findActiveDoctorsByClinicIds(@Param("clinicIds") java.util.List<Long> clinicIds);
+
+    java.util.Optional<Doctor> findByUserId(Long userId);
+
+    java.util.Optional<Doctor> findByFullNameAndClinicId(String fullName, Long clinicId);
 }

@@ -25,8 +25,10 @@ import java.util.stream.Collectors;
 public class OutpatientWorkflowServiceImpl implements OutpatientWorkflowService {
 
     private final AppointmentRepository appointmentRepository;
+    private final AppointmentSlotRepository appointmentSlotRepository;
     private final ReceptionCheckInService receptionCheckInService;
     private final UserRepository userRepository;
+    private final DoctorRepository doctorRepository;
     private final RoomRepository roomRepository;
     private final VisitRepository visitRepository;
     private final EncounterRepository encounterRepository;
@@ -43,6 +45,7 @@ public class OutpatientWorkflowServiceImpl implements OutpatientWorkflowService 
     private final PrescriptionItemRepository prescriptionItemRepository;
     private final VisitDispositionRepository visitDispositionRepository;
     private final MedicalRecordTemplateRepository medicalRecordTemplateRepository;
+    private final TechnicianRoomRepository technicianRoomRepository;
 
     @Override
     @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
@@ -291,6 +294,16 @@ public class OutpatientWorkflowServiceImpl implements OutpatientWorkflowService 
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new AppException("User không tồn tại"));
 
+        if (user.getRole() == com.org.care_slot.enums.RoleType.TECHNICIAN) {
+            boolean hasPermission = technicianRoomRepository.existsByUserIdAndRoomId(user.getId(), task.getRoom().getId());
+            if (!hasPermission) {
+                List<Room> assigned = technicianRoomRepository.findRoomsByUserId(user.getId());
+                if (assigned != null && !assigned.isEmpty()) {
+                    throw new AppException("Bạn không được phân công làm việc tại phòng cận lâm sàng này.");
+                }
+            }
+        }
+
         task.setStatus("COMPLETED");
         task.setCompletedAt(LocalDateTime.now());
         serviceTaskRepository.save(task);
@@ -454,15 +467,43 @@ public class OutpatientWorkflowServiceImpl implements OutpatientWorkflowService 
         return buildVisitDetailResponse(visit);
     }
 
+    private Doctor resolveDoctorForUser(Long currentUserId) {
+        if (currentUserId == null) return null;
+        User user = userRepository.findById(currentUserId).orElse(null);
+        if (user == null) return null;
+
+        Doctor doctor = doctorRepository.findByUserId(user.getId()).orElse(null);
+        if (doctor != null) return doctor;
+
+        if (user.getClinic() != null && user.getFullName() != null) {
+            doctor = doctorRepository.findByFullNameAndClinicId(user.getFullName(), user.getClinic().getId()).orElse(null);
+        }
+        return doctor;
+    }
+
     @Override
     @Transactional(readOnly = true)
-    public List<VisitDetailResponse.EncounterDto> getEncounterQueueByRoom(Long roomId, String status) {
+    public List<VisitDetailResponse.EncounterDto> getEncounterQueueByRoom(Long roomId, String status, Long currentUserId) {
+        User user = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
+        Doctor doctor = (user != null && com.org.care_slot.enums.RoleType.DOCTOR == user.getRole())
+                ? resolveDoctorForUser(currentUserId)
+                : null;
+
         List<Encounter> encounters;
-        if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) {
-            encounters = encounterRepository.findByRoomIdOrderByCreatedAtAsc(roomId);
+        if (doctor != null) {
+            if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) {
+                encounters = encounterRepository.findByRoomIdAndDoctorIdOrderByCreatedAtAsc(roomId, doctor.getId());
+            } else {
+                encounters = encounterRepository.findByRoomIdAndDoctorIdAndStatusOrderByCreatedAtAsc(roomId, doctor.getId(), status);
+            }
         } else {
-            encounters = encounterRepository.findByRoomIdAndStatusOrderByCreatedAtAsc(roomId, status);
+            if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) {
+                encounters = encounterRepository.findByRoomIdOrderByCreatedAtAsc(roomId);
+            } else {
+                encounters = encounterRepository.findByRoomIdAndStatusOrderByCreatedAtAsc(roomId, status);
+            }
         }
+
         return encounters.stream().map(e -> {
             var v = e.getVisit();
             var profile = v != null ? v.getPatientProfile() : null;
@@ -493,7 +534,20 @@ public class OutpatientWorkflowServiceImpl implements OutpatientWorkflowService 
 
     @Override
     @Transactional(readOnly = true)
-    public List<VisitDetailResponse.ServiceRequestDto> getTaskQueueByRoom(Long roomId, String status) {
+    public List<VisitDetailResponse.ServiceRequestDto> getTaskQueueByRoom(Long roomId, String status, Long currentUserId) {
+        if (currentUserId != null) {
+            User user = userRepository.findById(currentUserId).orElse(null);
+            if (user != null && com.org.care_slot.enums.RoleType.TECHNICIAN == user.getRole()) {
+                boolean hasPermission = technicianRoomRepository.existsByUserIdAndRoomId(user.getId(), roomId);
+                if (!hasPermission) {
+                    List<Room> assigned = technicianRoomRepository.findRoomsByUserId(user.getId());
+                    if (assigned != null && !assigned.isEmpty()) {
+                        throw new AppException("Bạn không có quyền truy cập hàng chờ của phòng này.");
+                    }
+                }
+            }
+        }
+
         List<ServiceTask> tasks;
         if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) {
             tasks = serviceTaskRepository.findByRoomIdOrderByCreatedAtDesc(roomId);
@@ -576,9 +630,44 @@ public class OutpatientWorkflowServiceImpl implements OutpatientWorkflowService 
 
     @Override
     @Transactional(readOnly = true)
-    public List<VisitDetailResponse.RoomDto> getRooms(Long clinicId) {
+    public List<VisitDetailResponse.RoomDto> getRooms(Long clinicId, Long currentUserId) {
         Long effectiveClinicId = (clinicId != null) ? clinicId : 1L;
-        List<Room> rooms = roomRepository.findByClinicId(effectiveClinicId);
+        User user = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
+
+        List<Room> rooms;
+        if (user != null && com.org.care_slot.enums.RoleType.DOCTOR == user.getRole()) {
+            Doctor doctor = resolveDoctorForUser(currentUserId);
+            if (doctor != null) {
+                List<Room> doctorRoomsFromSlots = appointmentSlotRepository.findRoomsByDoctorId(doctor.getId());
+                List<Room> doctorRoomsFromEncounters = encounterRepository.findRoomsByDoctorId(doctor.getId());
+
+                java.util.Set<Room> combined = new java.util.LinkedHashSet<>();
+                if (doctorRoomsFromSlots != null) combined.addAll(doctorRoomsFromSlots);
+                if (doctorRoomsFromEncounters != null) combined.addAll(doctorRoomsFromEncounters);
+
+                if (!combined.isEmpty()) {
+                    rooms = new ArrayList<>(combined);
+                } else {
+                    rooms = roomRepository.findByClinicId(effectiveClinicId).stream()
+                            .filter(r -> "CONSULTATION".equalsIgnoreCase(r.getRoomType()))
+                            .collect(Collectors.toList());
+                }
+            } else {
+                rooms = roomRepository.findByClinicId(effectiveClinicId);
+            }
+        } else if (user != null && com.org.care_slot.enums.RoleType.TECHNICIAN == user.getRole()) {
+            List<Room> techRooms = technicianRoomRepository.findRoomsByUserId(user.getId());
+            if (techRooms != null && !techRooms.isEmpty()) {
+                rooms = techRooms;
+            } else {
+                rooms = roomRepository.findByClinicId(effectiveClinicId).stream()
+                        .filter(r -> !"CONSULTATION".equalsIgnoreCase(r.getRoomType()) && !"CASHIER".equalsIgnoreCase(r.getRoomType()))
+                        .collect(Collectors.toList());
+            }
+        } else {
+            rooms = roomRepository.findByClinicId(effectiveClinicId);
+        }
+
         return rooms.stream().map(r -> VisitDetailResponse.RoomDto.builder()
                 .id(r.getId())
                 .roomNumber(r.getRoomNumber())
@@ -604,9 +693,20 @@ public class OutpatientWorkflowServiceImpl implements OutpatientWorkflowService 
 
     @Override
     @Transactional
-    public VisitDetailResponse startEncounter(Long encounterId) {
+    public VisitDetailResponse startEncounter(Long encounterId, Long currentUserId) {
         Encounter encounter = encounterRepository.findById(encounterId)
                 .orElseThrow(() -> new AppException("Encounter không tồn tại"));
+
+        if (currentUserId != null) {
+            User user = userRepository.findById(currentUserId).orElse(null);
+            if (user != null && com.org.care_slot.enums.RoleType.DOCTOR == user.getRole()) {
+                Doctor doctor = resolveDoctorForUser(currentUserId);
+                if (doctor != null && !encounter.getDoctor().getId().equals(doctor.getId())) {
+                    throw new AppException("Bạn không có quyền thao tác trên ca khám của bác sĩ khác.");
+                }
+            }
+        }
+
         if ("WAITING".equals(encounter.getStatus())) {
             encounter.setStatus("IN_PROGRESS");
             if (encounter.getStartedAt() == null) {
