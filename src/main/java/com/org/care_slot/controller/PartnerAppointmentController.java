@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.org.care_slot.security.CurrentUserProvider;
+
 @RestController
 @RequestMapping("/api/v1/partner/appointments")
 @RequiredArgsConstructor
@@ -29,12 +31,28 @@ public class PartnerAppointmentController {
     private final AppointmentService appointmentService;
     private final BookingLogService bookingLogService;
     private final OutpatientWorkflowService outpatientWorkflowService;
+    private final CurrentUserProvider currentUserProvider;
 
     private Long getEffectiveClinicId(Long headerClinicId) {
-        if (headerClinicId == null) {
+        if (headerClinicId != null) {
+            return headerClinicId;
+        }
+        try {
+            return currentUserProvider.getCurrentClinicId();
+        } catch (Exception e) {
             throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
         }
-        return headerClinicId;
+    }
+
+    private Long getEffectiveUserId(Long headerUserId) {
+        if (headerUserId != null) {
+            return headerUserId;
+        }
+        try {
+            return currentUserProvider.getCurrentUser().getId();
+        } catch (Exception e) {
+            return 1L;
+        }
     }
 
     @GetMapping
@@ -78,10 +96,11 @@ public class PartnerAppointmentController {
     public ResponseEntity<ApiResponse<AppointmentResponse>> checkInAppointment(
             @PathVariable Long id,
             @RequestHeader(value = "X-Clinic-Id", required = false) Long headerClinicId,
-            @RequestHeader("X-User-Id") Long currentUserId,
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
             @RequestBody(required = false) CheckInRequest request
     ) {
         Long clinicId = getEffectiveClinicId(headerClinicId);
+        Long currentUserId = getEffectiveUserId(headerUserId);
         appointmentService.getPartnerAppointmentDetail(clinicId, id, clinicId);
         if (request == null) request = CheckInRequest.builder().build();
         request.setAppointmentId(id);

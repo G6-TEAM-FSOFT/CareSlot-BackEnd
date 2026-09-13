@@ -17,18 +17,25 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.org.care_slot.security.CurrentUserProvider;
+
 @RestController
 @RequestMapping("/api/v1/partner/doctors")
 @RequiredArgsConstructor
 public class PartnerDoctorController {
 
     private final DoctorService doctorService;
+    private final CurrentUserProvider currentUserProvider;
 
     private Long getEffectiveClinicId(Long headerClinicId) {
-        if (headerClinicId == null) {
+        if (headerClinicId != null) {
+            return headerClinicId;
+        }
+        try {
+            return currentUserProvider.getCurrentClinicId();
+        } catch (Exception e) {
             throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
         }
-        return headerClinicId;
     }
 
     @GetMapping

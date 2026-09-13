@@ -8,6 +8,7 @@ import com.org.care_slot.dto.response.PageResponse;
 import com.org.care_slot.enums.AppointmentStatus;
 import com.org.care_slot.exception.AppException;
 import com.org.care_slot.exception.ErrorCode;
+import com.org.care_slot.security.CurrentUserProvider;
 import com.org.care_slot.service.AppointmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,12 +24,17 @@ import org.springframework.web.bind.annotation.*;
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
+    private final CurrentUserProvider currentUserProvider;
 
     private Long getEffectiveUserId(Long headerUserId) {
-        if (headerUserId == null) {
+        if (headerUserId != null) {
+            return headerUserId;
+        }
+        try {
+            return currentUserProvider.getCurrentPatientUserId();
+        } catch (Exception e) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
-        return headerUserId;
     }
 
     @PostMapping

@@ -11,5 +11,7 @@ import java.util.Optional;
 public interface ServiceTaskRepository extends JpaRepository<ServiceTask, Long> {
     Optional<ServiceTask> findByServiceRequestId(Long serviceRequestId);
     List<ServiceTask> findByRoomIdAndStatusOrderByCreatedAtAsc(Long roomId, String status);
+    List<ServiceTask> findByRoomIdAndStatusOrderByCreatedAtDesc(Long roomId, String status);
+    List<ServiceTask> findByRoomIdOrderByCreatedAtDesc(Long roomId);
     List<ServiceTask> findByDepartmentIdAndStatus(Long departmentId, String status);
 }

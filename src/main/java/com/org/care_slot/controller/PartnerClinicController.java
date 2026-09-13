@@ -14,18 +14,25 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import com.org.care_slot.security.CurrentUserProvider;
+
 @RestController
 @RequestMapping("/api/v1/partner/clinic")
 @RequiredArgsConstructor
 public class PartnerClinicController {
 
     private final ClinicService clinicService;
+    private final CurrentUserProvider currentUserProvider;
 
     private Long getEffectiveClinicId(Long headerClinicId) {
-        if (headerClinicId == null) {
+        if (headerClinicId != null) {
+            return headerClinicId;
+        }
+        try {
+            return currentUserProvider.getCurrentClinicId();
+        } catch (Exception e) {
             throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
         }
-        return headerClinicId;
     }
 
     @GetMapping

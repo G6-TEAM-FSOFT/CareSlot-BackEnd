@@ -37,7 +37,7 @@ public class CareSlotChatService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
-    @Value("${gemini.api.url:https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent}")
+    @Value("${gemini.api.url:https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent}")
     private String apiUrl;
 
     @Value("${gemini.api.key:}")
@@ -173,14 +173,14 @@ public class CareSlotChatService {
     private List<GeminiRequest.Content> getHistoryFromRedis(String sessionId) {
         if (sessionId == null || sessionId.isBlank())
             return new ArrayList<>();
-        String json = redisTemplate.opsForValue().get("chat:history:" + sessionId);
-        if (json == null || json.isBlank())
-            return new ArrayList<>();
         try {
+            String json = redisTemplate.opsForValue().get("chat:history:" + sessionId);
+            if (json == null || json.isBlank())
+                return new ArrayList<>();
             return objectMapper.readValue(json,
                     objectMapper.getTypeFactory().constructCollectionType(List.class, GeminiRequest.Content.class));
         } catch (Exception e) {
-            log.warn("Không thể parse history từ Redis cho session {}: {}", sessionId, e.getMessage());
+            log.warn("Không thể lấy chat history từ Redis cho session {}: {}", sessionId, e.getMessage());
             return new ArrayList<>();
         }
     }
@@ -191,8 +191,8 @@ public class CareSlotChatService {
         try {
             String json = objectMapper.writeValueAsString(history);
             redisTemplate.opsForValue().set("chat:history:" + sessionId, json, SESSION_TTL);
-        } catch (JsonProcessingException e) {
-            log.error("Lỗi serialize chat history: {}", e.getMessage());
+        } catch (Exception e) {
+            log.error("Lỗi lưu chat history vào Redis: {}", e.getMessage());
         }
     }
 }

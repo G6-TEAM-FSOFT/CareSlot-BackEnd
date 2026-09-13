@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Phiếu Khám Bệnh</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm 20mm 15mm 20mm;
+        }
+        body {
+            font-family: 'Roboto', 'Times New Roman', serif;
+            font-size: 13px;
+            line-height: 1.4;
+            color: #000;
+        }
+        .header-table {
+            width: 100%;
+            margin-bottom: 15px;
+            border-collapse: collapse;
+        }
+        .header-table td {
+            vertical-align: top;
+        }
+        .title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 15px 0;
+        }
+        .field-row {
+            margin-bottom: 6px;
+        }
+        .field-value {
+            font-weight: bold;
+        }
+        .section-title {
+            font-weight: bold;
+            margin-top: 12px;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 2px;
+        }
+        .section-content {
+            margin-left: 10px;
+            margin-bottom: 8px;
+        }
+        .footer-table {
+            width: 100%;
+            margin-top: 30px;
+            border-collapse: collapse;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <table class="header-table">
+        <tr>
+            <td style="width: 50%; text-align: left;">
+                <div style="font-weight: bold;" th:text="${data.clinicName}">Phòng khám CareSlot</div>
+                <div>Khoa: <span th:text="${data.departmentName}">Khoa Khám bệnh</span></div>
+            </td>
+            <td style="width: 50%; text-align: right;">
+                <div>Mã lượt khám: <span class="field-value" th:text="${data.visitCode}">VIS-001</span></div>
+                <div>Ngày khám: <span th:text="${#temporals.format(data.visitDate, 'dd/MM/yyyy HH:mm')}">13/09/2026</span></div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="title">PHIẾU KHÁM BỆNH</div>
+
+    <div class="field-row">
+        - Họ và tên người bệnh: <span class="field-value" th:text="${data.patientName}">NGUYỄN VĂN A</span>
+        <span style="margin-left: 40px;">Tuổi: <span class="field-value" th:text="${data.age}">30</span></span>
+        <span style="margin-left: 30px;">Giới tính: <span class="field-value" th:text="${data.gender}">MALE</span></span>
+    </div>
+
+    <div class="field-row">
+        - Số điện thoại: <span class="field-value" th:text="${data.phone != null ? data.phone : '-'}">0901234567</span>
+        <span style="margin-left: 40px;">Địa chỉ: <span class="field-value" th:text="${data.address}">Hà Nội</span></span>
+    </div>
+
+    <div class="section-title">1. Lý do vào khám (Chief Complaint):</div>
+    <div class="section-content" th:text="${data.chiefComplaint}">Khám tổng quát</div>
+
+    <div class="section-title">2. Sinh hiệu (Vital Signs):</div>
+    <div class="section-content" th:text="${data.vitalSignsText}">Mạch: 80, HA: 120/80</div>
+
+    <div class="section-title">3. Chẩn đoán (Diagnosis):</div>
+    <div class="section-content" th:text="${data.diagnosisText}">Khám bình thường</div>
+
+    <div class="section-title">4. Kế hoạch điều trị &amp; Dặn dò (Treatment &amp; Advice):</div>
+    <div class="section-content" th:text="${data.treatmentPlan}">Theo dõi định kỳ</div>
+    <div class="section-content" th:text="${data.advice}">Sinh hoạt lành mạnh</div>
+
+    <table class="footer-table">
+        <tr>
+            <td style="width: 50%;"></td>
+            <td style="width: 50%;">
+                <div><i>Ngày ..... tháng ..... năm 20...</i></div>
+                <div style="font-weight: bold; margin-top: 5px;">BÁC SĨ KHÁM BỆNH</div>
+                <div style="margin-top: 50px; font-weight: bold;" th:text="${data.doctorName}">BS. Nguyễn Văn A</div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

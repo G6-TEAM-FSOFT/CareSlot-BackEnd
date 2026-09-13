@@ -1,5 +1,7 @@
 package com.org.care_slot.security;
 
+import com.org.care_slot.entity.User;
+
 public interface CurrentUserProvider {
 
     /**
@@ -9,4 +11,14 @@ public interface CurrentUserProvider {
      * Ném AppException(ErrorCode.UNAUTHORIZED) nếu role không phải PATIENT (HTTP 403).
      */
     Long getCurrentPatientUserId();
+
+    /**
+     * Trả về User entity hiện tại từ SecurityContext.
+     */
+    User getCurrentUser();
+
+    /**
+     * Trả về clinicId của User hiện tại từ SecurityContext.
+     */
+    Long getCurrentClinicId();
 }

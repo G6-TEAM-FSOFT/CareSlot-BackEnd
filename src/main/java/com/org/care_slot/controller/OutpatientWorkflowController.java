@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import com.org.care_slot.security.CurrentUserProvider;
+
 @RestController
 @RequestMapping("/api/v1/outpatient")
 @RequiredArgsConstructor
@@ -20,12 +22,25 @@ import java.util.List;
 public class OutpatientWorkflowController {
 
     private final OutpatientWorkflowService outpatientWorkflowService;
+    private final CurrentUserProvider currentUserProvider;
+
+    private Long getEffectiveUserId(Long headerUserId) {
+        if (headerUserId != null) {
+            return headerUserId;
+        }
+        try {
+            return currentUserProvider.getCurrentUser().getId();
+        } catch (Exception e) {
+            return 1L;
+        }
+    }
 
     @PostMapping("/receptionist/check-in")
     @Operation(summary = "Lễ tân Check-in lịch hẹn (Tự động khởi tạo Visit và Initial Encounter)")
     public ResponseEntity<ApiResponse<VisitDetailResponse>> checkIn(
             @Valid @RequestBody CheckInRequest request,
-            @RequestHeader("X-User-Id") Long currentUserId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
+        Long currentUserId = getEffectiveUserId(headerUserId);
         VisitDetailResponse response = outpatientWorkflowService.checkIn(request, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Check-in thành công. Đã tạo đợt khám ngoại trú (Visit).", response));
     }
@@ -33,7 +48,8 @@ public class OutpatientWorkflowController {
     @GetMapping("/receptionist/appointments/{appointmentId}/replacement-slots")
     public ResponseEntity<ApiResponse<List<AppointmentSlotResponse>>> getReplacementSlots(
             @PathVariable Long appointmentId,
-            @RequestHeader("X-User-Id") Long currentUserId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
+        Long currentUserId = getEffectiveUserId(headerUserId);
         return ResponseEntity.ok(ApiResponse.success(outpatientWorkflowService.getReplacementSlots(appointmentId, currentUserId)));
     }
 

@@ -1,24 +1,40 @@
 package com.org.care_slot.security;
 
+import com.org.care_slot.entity.User;
 import com.org.care_slot.exception.AppException;
 import com.org.care_slot.exception.ErrorCode;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 /**
  * Production implementation của CurrentUserProvider.
- *
- * Lưu ý kiến trúc:
- * - Module Authentication / JWT / Spring Security hoàn chỉnh thuộc phạm vi Task T-012.
- * - T-012 là integration blocker cho nguồn authenticated principal thật.
- * - Khi chưa có authenticated principal do T-012 cung cấp, provider sẽ ném lỗi 401 UNAUTHENTICATED.
+ * Lấy authenticated user principal từ Spring SecurityContextHolder đã được JwtAuthenticationFilter populate.
  */
 @Component
 public class DefaultCurrentUserProvider implements CurrentUserProvider {
 
     @Override
     public Long getCurrentPatientUserId() {
-        // T-012 integration point: đọc principal từ SecurityContextHolder / JWT token
-        // Chưa có authentication context -> trả về 401 UNAUTHENTICATED
+        User user = getCurrentUser();
+        return user.getId();
+    }
+
+    @Override
+    public User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof User user) {
+            return user;
+        }
         throw new AppException(ErrorCode.UNAUTHENTICATED);
+    }
+
+    @Override
+    public Long getCurrentClinicId() {
+        User user = getCurrentUser();
+        if (user.getClinic() != null) {
+            return user.getClinic().getId();
+        }
+        throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
     }
 }

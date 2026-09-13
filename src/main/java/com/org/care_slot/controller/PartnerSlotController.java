@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.org.care_slot.security.CurrentUserProvider;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -26,12 +27,17 @@ import java.util.List;
 public class PartnerSlotController {
 
     private final AppointmentSlotService appointmentSlotService;
+    private final CurrentUserProvider currentUserProvider;
 
     private Long getEffectiveClinicId(Long headerClinicId) {
-        if (headerClinicId == null) {
+        if (headerClinicId != null) {
+            return headerClinicId;
+        }
+        try {
+            return currentUserProvider.getCurrentClinicId();
+        } catch (Exception e) {
             throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
         }
-        return headerClinicId;
     }
 
     @GetMapping

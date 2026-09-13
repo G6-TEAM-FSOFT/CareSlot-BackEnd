@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Đơn Thuốc</title>
+    <style>
+        @page { size: A4; margin: 15mm 20mm 15mm 20mm; }
+        body { font-family: 'Roboto', 'Times New Roman', serif; font-size: 13px; line-height: 1.4; color: #000; }
+        .header-table { width: 100%; margin-bottom: 15px; border-collapse: collapse; }
+        .header-table td { vertical-align: top; }
+        .title { text-align: center; font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 15px 0; }
+        .field-row { margin-bottom: 6px; }
+        .field-value { font-weight: bold; }
+        .drug-table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; }
+        .drug-table th, .drug-table td { border: 1px solid #000; padding: 6px; text-align: left; }
+        .drug-table th { background-color: #f2f2f2; text-align: center; font-weight: bold; }
+        .footer-table { width: 100%; margin-top: 30px; border-collapse: collapse; text-align: center; }
+    </style>
+</head>
+<body>
+    <table class="header-table">
+        <tr>
+            <td style="width: 50%; text-align: left;">
+                <div style="font-weight: bold;" th:text="${data.clinicName}">Phòng khám CareSlot</div>
+                <div>Địa chỉ: Hà Nội</div>
+            </td>
+            <td style="width: 50%; text-align: right;">
+                <div>Mã đơn thuốc: <span class="field-value" th:text="${data.prescriptionCode}">RX-001</span></div>
+                <div>Ngày kê: <span th:text="${#temporals.format(data.createdDate, 'dd/MM/yyyy HH:mm')}">13/09/2026</span></div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="title">ĐƠN THUỐC</div>
+
+    <div class="field-row">
+        - Họ và tên người bệnh: <span class="field-value" th:text="${data.patientName}">NGUYỄN VĂN A</span>
+        <span style="margin-left: 40px;">Tuổi: <span class="field-value" th:text="${data.age}">30</span></span>
+        <span style="margin-left: 30px;">Giới tính: <span class="field-value" th:text="${data.gender}">Nam</span></span>
+    </div>
+
+    <div class="field-row">
+        - Địa chỉ: <span class="field-value" th:text="${data.address}">Hà Nội</span>
+    </div>
+
+    <div class="field-row">
+        - Chẩn đoán: <span class="field-value" th:text="${data.diagnosisNote != null ? data.diagnosisNote : 'Khám tổng quát'}">Tăng huyết áp, Đái tháo đường</span>
+    </div>
+
+    <table class="drug-table">
+        <thead>
+            <tr>
+                <th style="width: 8%;">STT</th>
+                <th style="width: 32%;">Tên thuốc</th>
+                <th style="width: 12%;">Số lượng</th>
+                <th style="width: 12%;">Đơn vị</th>
+                <th style="width: 36%;">Liều dùng &amp; Cách dùng</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="item : ${data.items}">
+                <td style="text-align: center;" th:text="${item.index}">1</td>
+                <td style="font-weight: bold;" th:text="${item.drugName}">Amlodipine 5mg</td>
+                <td style="text-align: center;" th:text="${item.quantity}">30</td>
+                <td style="text-align: center;" th:text="${item.unit}">Viên</td>
+                <td th:text="${item.usageInstruction}">Uống 1 viên/sáng sau ăn</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="field-row" style="margin-top: 10px;">
+        - Tổng tiền ước tính: <span class="field-value" th:text="${#numbers.formatDecimal(data.totalEstimatedCost, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">150,000 VNĐ</span>
+    </div>
+
+    <table class="footer-table">
+        <tr>
+            <td style="width: 50%;"></td>
+            <td style="width: 50%;">
+                <div><i>Ngày ..... tháng ..... năm 20...</i></div>
+                <div style="font-weight: bold; margin-top: 5px;">BÁC SĨ KÊ ĐƠN</div>
+                <div style="margin-top: 50px; font-weight: bold;" th:text="${data.doctorName}">BS. Nguyễn Văn A</div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
