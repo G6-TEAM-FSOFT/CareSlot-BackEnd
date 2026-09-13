@@ -133,8 +133,11 @@ public class OutpatientWorkflowController {
 
     @PostMapping("/encounters/{encounterId}/start")
     @Operation(summary = "Bác sĩ bấm Bắt đầu khám (Chuyển trạng thái Encounter sang IN_PROGRESS)")
-    public ResponseEntity<ApiResponse<VisitDetailResponse>> startEncounter(@PathVariable Long encounterId) {
-        VisitDetailResponse response = outpatientWorkflowService.startEncounter(encounterId);
+    public ResponseEntity<ApiResponse<VisitDetailResponse>> startEncounter(
+            @PathVariable Long encounterId,
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
+        Long currentUserId = getEffectiveUserId(headerUserId);
+        VisitDetailResponse response = outpatientWorkflowService.startEncounter(encounterId, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Bắt đầu lượt khám thành công (IN_PROGRESS)", response));
     }
 
@@ -142,8 +145,10 @@ public class OutpatientWorkflowController {
     @Operation(summary = "Lấy hàng chờ khám bệnh theo Phòng")
     public ResponseEntity<ApiResponse<List<VisitDetailResponse.EncounterDto>>> getEncounterQueueByRoom(
             @RequestParam Long roomId,
-            @RequestParam(defaultValue = "WAITING") String status) {
-        List<VisitDetailResponse.EncounterDto> queue = outpatientWorkflowService.getEncounterQueueByRoom(roomId, status);
+            @RequestParam(defaultValue = "WAITING") String status,
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
+        Long currentUserId = getEffectiveUserId(headerUserId);
+        List<VisitDetailResponse.EncounterDto> queue = outpatientWorkflowService.getEncounterQueueByRoom(roomId, status, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách hàng chờ thành công", queue));
     }
 
@@ -151,8 +156,10 @@ public class OutpatientWorkflowController {
     @Operation(summary = "Lấy hàng chờ phòng Cận lâm sàng theo Phòng")
     public ResponseEntity<ApiResponse<List<VisitDetailResponse.ServiceRequestDto>>> getTaskQueueByRoom(
             @RequestParam Long roomId,
-            @RequestParam(defaultValue = "READY") String status) {
-        List<VisitDetailResponse.ServiceRequestDto> queue = outpatientWorkflowService.getTaskQueueByRoom(roomId, status);
+            @RequestParam(defaultValue = "READY") String status,
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
+        Long currentUserId = getEffectiveUserId(headerUserId);
+        List<VisitDetailResponse.ServiceRequestDto> queue = outpatientWorkflowService.getTaskQueueByRoom(roomId, status, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách task cận lâm sàng thành công", queue));
     }
 
@@ -167,8 +174,10 @@ public class OutpatientWorkflowController {
     @GetMapping("/rooms")
     @Operation(summary = "Lấy danh sách phòng khám và cận lâm sàng theo cơ sở")
     public ResponseEntity<ApiResponse<List<VisitDetailResponse.RoomDto>>> getRooms(
-            @RequestParam(defaultValue = "1") Long clinicId) {
-        List<VisitDetailResponse.RoomDto> rooms = outpatientWorkflowService.getRooms(clinicId);
+            @RequestParam(defaultValue = "1") Long clinicId,
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
+        Long currentUserId = getEffectiveUserId(headerUserId);
+        List<VisitDetailResponse.RoomDto> rooms = outpatientWorkflowService.getRooms(clinicId, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách phòng thành công", rooms));
     }
 

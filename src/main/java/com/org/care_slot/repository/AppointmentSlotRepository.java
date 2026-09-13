@@ -100,4 +100,7 @@ public interface AppointmentSlotRepository extends JpaRepository<AppointmentSlot
        default int holdSlotAtomic(Long slotId, LocalDateTime heldAt, LocalDateTime holdExpiresAt) {
               return holdSlotAtomic(slotId, heldAt, holdExpiresAt, SlotStatus.HELD, SlotStatus.AVAILABLE);
        }
+
+       @Query("SELECT DISTINCT s.room FROM AppointmentSlot s WHERE s.doctor.id = :doctorId AND s.room IS NOT NULL")
+       List<com.org.care_slot.entity.Room> findRoomsByDoctorId(@Param("doctorId") Long doctorId);
 }

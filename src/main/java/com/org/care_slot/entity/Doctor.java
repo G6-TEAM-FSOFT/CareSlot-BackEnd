@@ -27,6 +27,10 @@ public class Doctor extends BaseEntity {
     @JoinColumn(name = "specialty_id", nullable = false)
     private Specialty specialty;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
     @Column(name = "full_name", nullable = false, length = 255)
     private String fullName;
 
