@@ -494,7 +494,15 @@ public class OutpatientWorkflowServiceImpl implements OutpatientWorkflowService 
     @Override
     @Transactional(readOnly = true)
     public List<VisitDetailResponse.ServiceRequestDto> getTaskQueueByRoom(Long roomId, String status) {
-        List<ServiceTask> tasks = serviceTaskRepository.findByRoomIdAndStatusOrderByCreatedAtAsc(roomId, status);
+        List<ServiceTask> tasks;
+        if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) {
+            tasks = serviceTaskRepository.findByRoomIdOrderByCreatedAtDesc(roomId);
+        } else if ("COMPLETED".equalsIgnoreCase(status)) {
+            tasks = serviceTaskRepository.findByRoomIdAndStatusOrderByCreatedAtDesc(roomId, status);
+        } else {
+            tasks = serviceTaskRepository.findByRoomIdAndStatusOrderByCreatedAtAsc(roomId, status);
+        }
+
         return tasks.stream().map(t -> {
             ServiceRequest sr = t.getServiceRequest();
             ServiceCatalog svc = sr.getServiceCatalog();
@@ -503,10 +511,12 @@ public class OutpatientWorkflowServiceImpl implements OutpatientWorkflowService 
             Appointment apt = v != null ? v.getAppointment() : null;
             ClinicalOrder order = sr.getClinicalOrder();
             Doctor doctor = order != null ? order.getOrderedBy() : null;
+            ServiceResult res = serviceResultRepository.findByServiceRequestId(sr.getId()).orElse(null);
 
             return VisitDetailResponse.ServiceRequestDto.builder()
                     .id(sr.getId())
                     .visitId(v != null ? v.getId() : null)
+                    .patientProfileId(p != null ? p.getId() : null)
                     .visitCode(v != null ? v.getVisitCode() : null)
                     .bookingCode(apt != null ? apt.getBookingCode() : null)
                     .patientName(p != null ? p.getFullName() : null)
@@ -529,6 +539,15 @@ public class OutpatientWorkflowServiceImpl implements OutpatientWorkflowService 
                             .queueNumber(t.getQueueNumber())
                             .status(t.getStatus())
                             .build())
+                    .result(res != null ? VisitDetailResponse.ServiceResultDto.builder()
+                            .id(res.getId())
+                            .enteredByName(res.getEnteredBy() != null ? res.getEnteredBy().getFullName() : null)
+                            .status(res.getStatus())
+                            .findings(res.getFindings())
+                            .conclusion(res.getConclusion())
+                            .resultData(res.getResultData())
+                            .finalizedAt(res.getFinalizedAt())
+                            .build() : null)
                     .build();
         }).collect(Collectors.toList());
     }
@@ -685,6 +704,7 @@ public class OutpatientWorkflowServiceImpl implements OutpatientWorkflowService 
                             return VisitDetailResponse.ServiceRequestDto.builder()
                                     .id(sr.getId())
                                     .visitId(visit.getId())
+                                    .patientProfileId(visit.getPatientProfile() != null ? visit.getPatientProfile().getId() : null)
                                     .visitCode(visit.getVisitCode())
                                     .bookingCode(visit.getAppointment() != null ? visit.getAppointment().getBookingCode() : null)
                                     .patientName(visit.getPatientProfile() != null ? visit.getPatientProfile().getFullName() : null)

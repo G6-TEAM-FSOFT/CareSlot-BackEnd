@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Phiếu Tổng Hợp Kết Quả Lượt Khám</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm 20mm 15mm 20mm;
+        }
+        body {
+            font-family: 'Roboto', 'Times New Roman', serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #000;
+        }
+        .header-table {
+            width: 100%;
+            margin-bottom: 12px;
+            border-collapse: collapse;
+        }
+        .header-table td {
+            vertical-align: top;
+        }
+        .title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 10px 0;
+        }
+        .field-row {
+            margin-bottom: 5px;
+        }
+        .field-value {
+            font-weight: bold;
+        }
+        .section-title {
+            font-weight: bold;
+            font-size: 13px;
+            margin-top: 10px;
+            margin-bottom: 4px;
+            border-bottom: 1.5px solid #000;
+            padding-bottom: 2px;
+            text-transform: uppercase;
+        }
+        .section-content {
+            margin-left: 5px;
+            margin-bottom: 6px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+            margin-bottom: 10px;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #444;
+            padding: 5px 6px;
+            text-align: left;
+        }
+        .data-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: center;
+        }
+        .footer-table {
+            width: 100%;
+            margin-top: 25px;
+            border-collapse: collapse;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <table class="header-table">
+        <tr>
+            <td style="width: 50%; text-align: left;">
+                <div style="font-weight: bold; font-size: 14px;" th:text="${data.clinicName}">Phòng khám CareSlot</div>
+                <div>Khoa: <span th:text="${data.departmentName}">Khoa Khám Bệnh</span></div>
+            </td>
+            <td style="width: 50%; text-align: right;">
+                <div>Mã lượt khám: <span class="field-value" th:text="${data.visitCode}">VIS-001</span></div>
+                <div>Thời gian khám: <span th:text="${#temporals.format(data.checkedInAt, 'dd/MM/yyyy HH:mm')}">13/09/2026</span></div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="title">PHIẾU TỔNG HỢP KẾT QUẢ TOÀN BỘ LƯỢT KHÁM</div>
+
+    <div class="field-row">
+        - Họ và tên người bệnh: <span class="field-value" th:text="${data.patientName}">NGUYỄN VĂN A</span>
+        <span style="margin-left: 30px;">Tuổi: <span class="field-value" th:text="${data.age}">30</span></span>
+        <span style="margin-left: 20px;">Giới tính: <span class="field-value" th:text="${data.gender}">Nam</span></span>
+    </div>
+    <div class="field-row">
+        - Số điện thoại: <span class="field-value" th:text="${data.phone != null ? data.phone : '-'}">0901234567</span>
+        <span style="margin-left: 30px;">Địa chỉ: <span class="field-value" th:text="${data.address}">Hà Nội</span></span>
+    </div>
+
+    <div class="section-title">I. SINH HIỆU &amp; BỆNH SỬ BÁC SĨ GHI NHẬN</div>
+    <div class="section-content">
+        <div><strong>Chỉ số sinh tồn:</strong> <span th:text="${data.vitalSignsText != null ? data.vitalSignsText : 'Chưa ghi nhận'}">Mạch 80...</span></div>
+        <div><strong>Ghi chú lâm sàng:</strong> <span th:text="${data.clinicalNotesText != null ? data.clinicalNotesText : 'Bình thường'}">Ghi chú...</span></div>
+        <div><strong>Chẩn đoán tổng kết:</strong> <span class="field-value" style="color: #004d40;" th:text="${data.diagnosisText != null ? data.diagnosisText : 'Chưa kết luận'}">Viêm dạ dày</span></div>
+    </div>
+
+    <div class="section-title">II. KẾT QUẢ DỊCH VỤ CẬN LÂM SÀNG &amp; KHÁM CHUYÊN KHOA</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 6%;">STT</th>
+                <th>Tên Dịch Vụ / Xét Nghiệm</th>
+                <th style="width: 15%;">Loại</th>
+                <th>Mô Tả / Findings</th>
+                <th style="width: 25%;">Kết Luận</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="res : ${data.serviceResults}">
+                <td style="text-align: center;" th:text="${res.index}">1</td>
+                <td th:text="${res.serviceName}">Xét nghiệm máu</td>
+                <td style="text-align: center;" th:text="${res.category}">LAB</td>
+                <td th:text="${res.findings}">Bình thường</td>
+                <td style="font-weight: bold;" th:text="${res.conclusion}">Không phát hiện bất thường</td>
+            </tr>
+            <tr th:if="${data.serviceResults == null || data.serviceResults.isEmpty()}">
+                <td colspan="5" style="text-align: center; font-style: italic;">Chưa có chỉ định cận lâm sàng trong lượt khám này</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="section-title">III. ĐƠN THUỐC &amp; DẶN DÒ ĐIỀU TRỊ</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 6%;">STT</th>
+                <th>Tên Thuốc / Hàm Lượng</th>
+                <th style="width: 15%;">Số Lượng</th>
+                <th>Hướng Dẫn Sử Dụng</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="item : ${data.prescriptionItems}">
+                <td style="text-align: center;" th:text="${item.index}">1</td>
+                <td><strong th:text="${item.drugName}">No-Spa</strong> (<span th:text="${item.dosage}">40mg</span>)</td>
+                <td style="text-align: center; font-weight: bold;" th:text="${item.quantity + ' ' + item.unit}">10 Viên</td>
+                <td th:text="${item.usageInstruction}">Uống 1 viên x 2 lần/ngày</td>
+            </tr>
+            <tr th:if="${data.prescriptionItems == null || data.prescriptionItems.isEmpty()}">
+                <td colspan="4" style="text-align: center; font-style: italic;">Không kê đơn thuốc</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="section-content">
+        <div><strong>Kế hoạch điều trị:</strong> <span th:text="${data.treatmentPlan}">Điều trị ngoại trú</span></div>
+        <div><strong>Lời khuyên bác sĩ:</strong> <span th:text="${data.advice}">Tái khám khi có triệu chứng</span></div>
+    </div>
+
+    <table class="footer-table">
+        <tr>
+            <td style="width: 50%;"></td>
+            <td style="width: 50%;">
+                <div><i>Ngày ..... tháng ..... năm 20...</i></div>
+                <div style="font-weight: bold; margin-top: 5px;">BÁC SĨ TRỰC KHÁM</div>
+                <div style="margin-top: 45px; font-weight: bold;" th:text="${data.doctorName}">BS. Trưởng Khoa</div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

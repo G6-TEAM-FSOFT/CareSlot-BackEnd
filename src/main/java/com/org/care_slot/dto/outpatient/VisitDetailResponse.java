@@ -119,6 +119,7 @@ public class VisitDetailResponse {
     public static class ServiceRequestDto {
         private Long id;
         private Long visitId;
+        private Long patientProfileId;
         private String visitCode;
         private String bookingCode;
         private String patientName;

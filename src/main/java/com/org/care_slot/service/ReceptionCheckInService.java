@@ -186,7 +186,8 @@ public class ReceptionCheckInService {
                 .orElseThrow(() -> new AppException("Nhân viên không tồn tại."));
         if (actor.getClinic() == null || !"ACTIVE".equals(actor.getStatus())
                 || !(actor.getRole() == RoleType.RECEPTIONIST || actor.getRole() == RoleType.CLINIC_STAFF
-                || actor.getRole() == RoleType.CLINIC_PARTNER || actor.getRole() == RoleType.CLINIC_ADMIN)) {
+                || actor.getRole() == RoleType.CLINIC_PARTNER || actor.getRole() == RoleType.CLINIC_ADMIN
+                || actor.getRole() == RoleType.ADMIN)) {
             throw new AppException("Chỉ nhân viên tiếp đón thuộc cơ sở được thực hiện thao tác này.");
         }
         return actor;

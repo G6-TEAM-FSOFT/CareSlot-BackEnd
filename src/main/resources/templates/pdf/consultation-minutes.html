@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Trích Biên Bản Hội Chẩn Khoa</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm 20mm 15mm 20mm;
+        }
+        body {
+            font-family: 'Roboto', 'Times New Roman', serif;
+            font-size: 13px;
+            line-height: 1.4;
+            color: #000;
+            margin: 0;
+            padding: 0;
+        }
+        .header-table {
+            width: 100%;
+            margin-bottom: 15px;
+            border-collapse: collapse;
+        }
+        .header-table td {
+            vertical-align: top;
+        }
+        .title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 20px 0 15px 0;
+            letter-spacing: 0.5px;
+        }
+        .field-row {
+            margin-bottom: 7px;
+            font-size: 13px;
+        }
+        .field-label {
+            font-weight: normal;
+        }
+        .field-value {
+            font-weight: bold;
+        }
+        .checkbox-box {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 1px solid #000;
+            text-align: center;
+            line-height: 12px;
+            font-size: 11px;
+            margin-left: 4px;
+            margin-right: 2px;
+            font-weight: bold;
+        }
+        .section-title {
+            font-weight: bold;
+            margin-top: 14px;
+            margin-bottom: 5px;
+        }
+        .section-content {
+            margin-left: 15px;
+            text-transform: uppercase;
+            font-weight: bold;
+            min-height: 25px;
+        }
+        .divider {
+            width: 80px;
+            border-bottom: 1px solid #000;
+            margin: 3px auto;
+        }
+        .divider-long {
+            width: 120px;
+            border-bottom: 1px solid #000;
+            margin: 3px auto;
+        }
+    </style>
+</head>
+<body>
+    <table class="header-table">
+        <tr>
+            <td style="width: 50%; text-align: center;">
+                <div>SỞ Y TẾ ĐỒNG THÁP</div>
+                <div style="font-weight: bold;">TRUNG TÂM Y TẾ KHU VỰC HỒNG</div>
+                <div>Khoa: <span th:text="${data.departmentName}">Khoa Khám bệnh</span></div>
+                <div class="divider"></div>
+            </td>
+            <td style="width: 50%; text-align: center;">
+                <div style="font-weight: bold;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                <div style="font-weight: bold;">Độc lập - Tự do - Hạnh phúc</div>
+                <div class="divider-long"></div>
+                <div style="text-align: right; font-size: 11px; margin-top: 6px;">
+                    Mã số: <span th:text="${data.code}">27/BV2</span><br/>
+                    Số vào viện: <span th:text="${data.hospitalAdmissionNumber}"></span>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="title">TRÍCH BIÊN BẢN HỘI CHẨN KHOA</div>
+
+    <div class="field-row">
+        - Họ và tên người bệnh: <span class="field-value" th:text="${data.patientName}">BN KHÁM NGOẠI TRÚ</span>
+        <span style="margin-left: 60px;">Tuổi: <span class="field-value" th:text="${data.patientAge}">29</span> Tuổi</span>
+        <span style="margin-left: 30px;">
+            <span class="checkbox-box" th:text="${data.gender == 'MALE' ? 'X' : ''}">X</span> Nam
+            <span class="checkbox-box" th:text="${data.gender == 'FEMALE' ? 'X' : ''}"></span> Nữ
+        </span>
+    </div>
+
+    <div class="field-row">
+        - Đã điều trị từ ngày: <span class="field-value" th:text="${#temporals.format(data.treatedFromDate, 'dd/MM/yyyy')}">13/09/2025</span>
+        <span style="margin-left: 80px;">đến ngày: <span class="field-value" th:text="${#temporals.format(data.treatedToDate, 'dd/MM/yyyy')}">13/09/2025</span></span>
+    </div>
+
+    <div class="field-row">
+        - Tại số giường: <span class="field-value" th:text="${data.bedNumber}"></span>
+        <span style="margin-left: 50px;">Buồng: <span class="field-value" th:text="${data.roomNumber}"></span></span>
+        <span style="margin-left: 50px;">Khoa: <span class="field-value" th:text="${data.departmentName}">Khoa Khám bệnh</span></span>
+    </div>
+
+    <div class="field-row">
+        - Chẩn đoán: <span class="field-value" th:text="${data.diagnosisText}">I10-Bệnh lý tăng huyết áp, E11-Bệnh đái tháo đường không phụ thuộc insuline</span>
+        <br/>
+        <span style="margin-left: 10px;">Hội chẩn lúc: <span class="field-value" th:text="${#temporals.format(data.consultationTime, 'HH\'h\'mm dd/MM/yyyy')}">22h25 13/09/2025</span></span>
+    </div>
+
+    <div class="field-row">
+        - Chủ tọa: <span class="field-value" th:text="${data.chairpersonName}">Nguyễn Vi Lâm</span>
+        <span style="margin-left: 120px;">Thư ký: <span class="field-value" th:text="${data.secretaryName}">Huỳnh Thị Mỹ Thuận</span></span>
+    </div>
+
+    <div class="field-row">
+        - Thành viên tham gia: <span class="field-value" th:text="${data.participantsText != null ? data.participantsText : '-'}">-</span>
+    </div>
+
+    <div class="section-title">Tóm tắt quá trình diễn biến bệnh, quá trình điều trị và chăm sóc người bệnh:</div>
+    <div class="section-content" th:text="${data.clinicalSummary}">TÓM TẮT CHĂM SÓC</div>
+
+    <div class="section-title">Kết luận (sau khi đã khám lại và thảo luận):</div>
+    <div class="section-content" th:text="${data.conclusionText}">CHUYÊN VIỆN</div>
+
+    <div class="section-title">Hướng điều trị tiếp:</div>
+    <div class="section-content" th:text="${data.treatmentPlan}"></div>
+</body>
+</html>
