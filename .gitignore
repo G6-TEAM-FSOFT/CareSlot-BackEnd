@@ -41,7 +41,7 @@ build/
 application-local.properties
 application-local.yml
 application-local.yaml
-application.yaml
+
 
 # IntelliJ IDEA
 .idea/

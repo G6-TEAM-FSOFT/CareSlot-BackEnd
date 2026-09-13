@@ -1,0 +1,84 @@
+server:
+  port: ${BACKEND_PORT:8080}
+
+spring:
+  application:
+    name: care-slot-backend
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/careslot_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: ${SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: ${FORMAT_SQL:false}
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  jwt:
+    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    access-token-expiration-ms: ${JWT_EXPIRATION:86400000}
+    refresh-token-expiration-ms: ${JWT_REFRESH_EXPIRATION:1209600000}
+    secure-cookie: ${COOKIE_SECURE:false}
+    same-site: ${COOKIE_SAME_SITE:Lax}
+
+vnpay:
+  tmn-code: ${VNPAY_TMN_CODE:AS09APAU}
+  hash-secret: ${VNPAY_HASH_SECRET:BZKK4YZW5D75KC87AWRN75YN0FR2DD52}
+  pay-url: ${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+  return-url: ${VNPAY_RETURN_URL:http://localhost:5173/payment/vnpay-callback}
+  ipn-url: ${VNPAY_IPN_URL:http://localhost:8080/api/v1/payments/vnpay-ipn}
+  hold-timeout-minutes: ${VNPAY_HOLD_TIMEOUT_MINUTES:10}
+
+gemini:
+  api:
+    url: ${GEMINI_API_URL:https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent}
+    key: ${GEMINI_API_KEY:}
+
+aws:
+  region: ${AWS_REGION:ap-southeast-2}
+  access-key: ${AWS_ACCESS_KEY_ID:}
+  secret-key: ${AWS_SECRET_ACCESS_KEY:}
+  s3:
+    bucket-name: ${AWS_S3_BUCKET:careslot-images-dev}
