@@ -2,107 +2,237 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
-    <title>Phiếu Khám Bệnh</title>
+    <title>Phiếu Khám Bệnh &amp; Thông Tin Lịch Hẹn</title>
     <style>
         @page {
             size: A4;
-            margin: 15mm 20mm 15mm 20mm;
+            margin: 12mm 15mm 12mm 15mm;
         }
         body {
             font-family: 'Roboto', 'Times New Roman', serif;
-            font-size: 13px;
-            line-height: 1.4;
-            color: #000;
+            font-size: 12px;
+            line-height: 1.45;
+            color: #1e293b;
         }
         .header-table {
             width: 100%;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             border-collapse: collapse;
+            border-bottom: 2px solid #0284c7;
+            padding-bottom: 8px;
         }
         .header-table td {
             vertical-align: top;
         }
-        .title {
+        .clinic-name {
+            font-size: 15px;
+            font-weight: bold;
+            color: #0369a1;
+            text-transform: uppercase;
+        }
+        .clinic-sub {
+            font-size: 11px;
+            color: #475569;
+        }
+        .doc-code {
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 12px;
+            color: #0f172a;
+        }
+        .main-title {
             text-align: center;
             font-size: 18px;
             font-weight: bold;
             text-transform: uppercase;
-            margin: 15px 0;
+            color: #0f172a;
+            margin: 10px 0 15px 0;
+            letter-spacing: 0.5px;
         }
-        .field-row {
+        .section-header {
+            font-size: 13px;
+            font-weight: bold;
+            color: #0369a1;
+            background-color: #f0f9ff;
+            padding: 5px 8px;
+            border-left: 4px solid #0284c7;
+            margin-top: 12px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-bottom: 6px;
         }
-        .field-value {
-            font-weight: bold;
+        .info-table td {
+            padding: 4px 6px;
+            vertical-align: top;
         }
-        .section-title {
+        .label {
             font-weight: bold;
-            margin-top: 12px;
-            margin-bottom: 4px;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 2px;
+            color: #334155;
+            width: 22%;
         }
-        .section-content {
-            margin-left: 10px;
+        .value {
+            color: #0f172a;
+        }
+        .value-highlight {
+            font-weight: bold;
+            color: #0369a1;
+        }
+        .grid-2col {
+            width: 50%;
+        }
+        .border-box {
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 8px 10px;
+            background-color: #f8fafc;
             margin-bottom: 8px;
         }
         .footer-table {
             width: 100%;
-            margin-top: 30px;
+            margin-top: 25px;
             border-collapse: collapse;
             text-align: center;
+        }
+        .footer-table td {
+            vertical-align: top;
+            width: 50%;
+        }
+        .signature-title {
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 4px;
+            font-size: 11px;
+        }
+        .signature-space {
+            height: 60px;
         }
     </style>
 </head>
 <body>
+
+    <!-- Header Block -->
     <table class="header-table">
         <tr>
-            <td style="width: 50%; text-align: left;">
-                <div style="font-weight: bold;" th:text="${data.clinicName}">Phòng khám CareSlot</div>
-                <div>Khoa: <span th:text="${data.departmentName}">Khoa Khám bệnh</span></div>
+            <td style="width: 60%;">
+                <div class="clinic-name" th:text="${data.clinicName}">BỆNH VIỆN / PHÒNG KHÁM CARESLOT</div>
+                <div class="clinic-sub" th:text="${data.clinicAddress}">Địa chỉ: Cơ sở khám chữa bệnh CareSlot</div>
+                <div class="clinic-sub">Khoa / Trực thuộc: <strong th:text="${data.departmentName}">Khoa Khám bệnh</strong></div>
             </td>
-            <td style="width: 50%; text-align: right;">
-                <div>Mã lượt khám: <span class="field-value" th:text="${data.visitCode}">VIS-001</span></div>
-                <div>Ngày khám: <span th:text="${#temporals.format(data.visitDate, 'dd/MM/yyyy HH:mm')}">13/09/2026</span></div>
+            <td style="width: 40%; text-align: right;">
+                <div>Mã hồ sơ: <span class="doc-code" th:text="${data.patientCode}">PAT-0001</span></div>
+                <div>Mã lượt khám: <span class="doc-code" th:text="${data.visitCode}">VIS-2026-001</span></div>
+                <div>Mã đặt lịch: <span class="doc-code" th:text="${data.bookingCode}">BK-893021</span></div>
             </td>
         </tr>
     </table>
 
-    <div class="title">PHIẾU KHÁM BỆNH</div>
+    <!-- Title -->
+    <div class="main-title">PHIẾU KHÁM BỆNH &amp; THÔNG TIN LỊCH HẸN</div>
 
-    <div class="field-row">
-        - Họ và tên người bệnh: <span class="field-value" th:text="${data.patientName}">NGUYỄN VĂN A</span>
-        <span style="margin-left: 40px;">Tuổi: <span class="field-value" th:text="${data.age}">30</span></span>
-        <span style="margin-left: 30px;">Giới tính: <span class="field-value" th:text="${data.gender}">MALE</span></span>
+    <!-- Section I: Patient Personal Information -->
+    <div class="section-header">I. THÔNG TIN CÁ NHÂN NGƯỜI BỆNH</div>
+    <table class="info-table">
+        <tr>
+            <td class="label">Họ và tên người bệnh:</td>
+            <td class="value value-highlight" style="font-size: 14px; text-transform: uppercase;" th:text="${data.patientName}">NGUYỄN VĂN A</td>
+            <td class="label" style="width: 15%;">Mã bệnh nhân:</td>
+            <td class="value doc-code" th:text="${data.patientCode}">PAT-0001</td>
+        </tr>
+        <tr>
+            <td class="label">Ngày sinh / Tuổi:</td>
+            <td class="value">
+                <span th:text="${data.dateOfBirth != null ? #temporals.format(data.dateOfBirth, 'dd/MM/yyyy') : 'N/A'}">01/01/1995</span>
+                (<strong th:text="${data.age}">30</strong> tuổi)
+            </td>
+            <td class="label">Giới tính:</td>
+            <td class="value" th:text="${data.gender}">Nam</td>
+        </tr>
+        <tr>
+            <td class="label">Số điện thoại:</td>
+            <td class="value" th:text="${data.phone}">0901234567</td>
+            <td class="label">Số CCCD / CMND:</td>
+            <td class="value" th:text="${data.identityCard}">001203004005</td>
+        </tr>
+        <tr>
+            <td class="label">Dân tộc / Quốc tịch:</td>
+            <td class="value">
+                <span th:text="${data.ethnicity}">Kinh</span> / <span th:text="${data.nationality}">Việt Nam</span>
+            </td>
+            <td class="label">Nghề nghiệp:</td>
+            <td class="value" th:text="${data.occupation}">Tự do</td>
+        </tr>
+        <tr>
+            <td class="label">Địa chỉ đăng ký:</td>
+            <td class="value" colspan="3" th:text="${data.address}">Số 123 Đường Láng, Đống Đa, Hà Nội</td>
+        </tr>
+    </table>
+
+    <!-- Section II: Appointment & Visit Details -->
+    <div class="section-header">II. THÔNG TIN ĐẶT LỊCH HẸN &amp; ĐỢT KHÁM</div>
+    <table class="info-table">
+        <tr>
+            <td class="label">Mã Booking đặt lịch:</td>
+            <td class="value doc-code" th:text="${data.bookingCode}">BK-893021</td>
+            <td class="label" style="width: 18%;">Trạng thái đợt khám:</td>
+            <td class="value value-highlight" th:text="${data.statusText}">Đã hoàn tất (COMPLETED)</td>
+        </tr>
+        <tr>
+            <td class="label">Ngày hẹn khám:</td>
+            <td class="value" th:text="${data.appointmentDateText}">13/09/2026</td>
+            <td class="label">Khung giờ hẹn:</td>
+            <td class="value value-highlight" th:text="${data.timeSlot}">08:00 - 09:00</td>
+        </tr>
+        <tr>
+            <td class="label">Chuyên khoa đăng ký:</td>
+            <td class="value" th:text="${data.specialtyName}">Nội tổng quát</td>
+            <td class="label">Phòng khám chỉ định:</td>
+            <td class="value" th:text="${data.roomName}">Phòng 101 - Khám Nội</td>
+        </tr>
+        <tr>
+            <td class="label">Bác sĩ phụ trách:</td>
+            <td class="value value-highlight" th:text="${data.doctorName}">BS. Nguyễn Văn A</td>
+            <td class="label">Thời gian Check-in:</td>
+            <td class="value" th:text="${#temporals.format(data.visitDate, 'dd/MM/yyyy HH:mm')}">13/09/2026 08:15</td>
+        </tr>
+        <tr>
+            <td class="label">Lý do khám / Triệu chứng:</td>
+            <td class="value" colspan="3" style="font-style: italic;" th:text="${data.symptomNote}">Đau vùng thượng vị âm ỉ sau ăn, không sốt, không nôn.</td>
+        </tr>
+    </table>
+
+    <!-- Section III: Clinical Summary -->
+    <div class="section-header">III. TÓM TẮT KHÁM LÂM SÀNG &amp; KẾT LUẬN</div>
+    <div class="border-box">
+        <div style="margin-bottom: 4px;"><strong>1. Chỉ số sinh tồn (Vital Signs):</strong> <span th:text="${data.vitalSignsText}">Mạch: 80, HA: 120/80 mmHg, Thân nhiệt: 36.8°C</span></div>
+        <div style="margin-bottom: 4px;"><strong>2. Chẩn đoán đã ghi nhận (Diagnosis):</strong> <span class="value-highlight" th:text="${data.diagnosisText}">Khám bình thường</span></div>
+        <div style="margin-bottom: 4px;"><strong>3. Hướng điều trị (Treatment Plan):</strong> <span th:text="${data.treatmentPlan}">Điều trị ngoại trú theo đơn thuốc</span></div>
+        <div><strong>4. Lời dặn &amp; Hướng dẫn tái khám:</strong> <span th:text="${data.advice}">Nghỉ ngơi sinh hoạt lành mạnh, tái khám sau 30 ngày.</span></div>
     </div>
 
-    <div class="field-row">
-        - Số điện thoại: <span class="field-value" th:text="${data.phone != null ? data.phone : '-'}">0901234567</span>
-        <span style="margin-left: 40px;">Địa chỉ: <span class="field-value" th:text="${data.address}">Hà Nội</span></span>
-    </div>
-
-    <div class="section-title">1. Lý do vào khám (Chief Complaint):</div>
-    <div class="section-content" th:text="${data.chiefComplaint}">Khám tổng quát</div>
-
-    <div class="section-title">2. Sinh hiệu (Vital Signs):</div>
-    <div class="section-content" th:text="${data.vitalSignsText}">Mạch: 80, HA: 120/80</div>
-
-    <div class="section-title">3. Chẩn đoán (Diagnosis):</div>
-    <div class="section-content" th:text="${data.diagnosisText}">Khám bình thường</div>
-
-    <div class="section-title">4. Kế hoạch điều trị &amp; Dặn dò (Treatment &amp; Advice):</div>
-    <div class="section-content" th:text="${data.treatmentPlan}">Theo dõi định kỳ</div>
-    <div class="section-content" th:text="${data.advice}">Sinh hoạt lành mạnh</div>
-
+    <!-- Footer Signatures -->
     <table class="footer-table">
         <tr>
-            <td style="width: 50%;"></td>
-            <td style="width: 50%;">
+            <td>
                 <div><i>Ngày ..... tháng ..... năm 20...</i></div>
-                <div style="font-weight: bold; margin-top: 5px;">BÁC SĨ KHÁM BỆNH</div>
-                <div style="margin-top: 50px; font-weight: bold;" th:text="${data.doctorName}">BS. Nguyễn Văn A</div>
+                <div class="signature-title">NGƯỜI BỆNH / ĐẠI DIỆN</div>
+                <div style="font-size: 10px; color: #64748b;">(Ký và ghi rõ họ tên)</div>
+                <div class="signature-space"></div>
+                <div style="font-weight: bold;" th:text="${data.patientName}">NGUYỄN VĂN A</div>
+            </td>
+            <td>
+                <div><i>Ngày ..... tháng ..... năm 20...</i></div>
+                <div class="signature-title">BÁC SĨ KHÁM BỆNH</div>
+                <div style="font-size: 10px; color: #64748b;">(Ký, đóng dấu và ghi rõ họ tên)</div>
+                <div class="signature-space"></div>
+                <div style="font-weight: bold; color: #0369a1;" th:text="${data.doctorName}">BS. NGUYỄN VĂN A</div>
             </td>
         </tr>
     </table>
+
 </body>
 </html>
+

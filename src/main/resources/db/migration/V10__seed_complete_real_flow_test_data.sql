@@ -111,18 +111,18 @@ ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), role = VALUES(role), clin
 -- 10. Tạo các Slot khám song song cho BS. Lê Thị Phương Thảo tại Phòng 306 (Room ID = 6)
 INSERT INTO appointment_slots (id, doctor_id, appointment_date, start_time, end_time, room_name, status, room_id)
 VALUES
-(49, 11, '2026-09-13', '01:20:00', '01:40:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
-(50, 11, '2026-09-13', '01:40:00', '02:00:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
-(51, 11, '2026-09-13', '09:00:00', '09:20:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
-(52, 11, '2026-09-13', '09:20:00', '09:40:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
-(53, 11, '2026-09-13', '09:40:00', '10:00:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
-(54, 11, '2026-09-13', '10:00:00', '10:20:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
-(55, 11, '2026-09-13', '10:20:00', '10:40:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
-(56, 11, '2026-09-13', '17:00:00', '17:20:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
-(57, 11, '2026-09-13', '17:20:00', '17:40:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
-(58, 11, '2026-09-13', '17:40:00', '18:00:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
-(59, 11, '2026-09-13', '11:00:00', '11:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 6),
-(60, 11, '2026-09-13', '12:00:00', '12:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 6)
+(60, 11, '2026-09-13', '01:20:00', '01:40:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(61, 11, '2026-09-13', '01:40:00', '02:00:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(62, 11, '2026-09-13', '09:00:00', '09:20:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(63, 11, '2026-09-13', '09:20:00', '09:40:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(64, 11, '2026-09-13', '09:40:00', '10:00:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(65, 11, '2026-09-13', '10:00:00', '10:20:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(66, 11, '2026-09-13', '13:40:00', '14:00:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(67, 11, '2026-09-13', '14:20:00', '14:40:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(68, 11, '2026-09-13', '14:40:00', '15:00:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(69, 11, '2026-09-13', '17:40:00', '18:00:00', 'Phòng 306 Tiêu Hóa', 'AVAILABLE', 6),
+(70, 11, '2026-09-13', '11:00:00', '11:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 6),
+(71, 11, '2026-09-13', '12:00:00', '12:20:00', 'Phòng 305 Tiêu Hóa', 'AVAILABLE', 6)
 ON DUPLICATE KEY UPDATE status = VALUES(status), room_id = VALUES(room_id);
 
 
