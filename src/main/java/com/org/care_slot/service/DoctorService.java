@@ -19,4 +19,5 @@ public interface DoctorService {
     DoctorDetailResponse createDoctor(Long clinicId, DoctorCreateRequest request, Long staffClinicId);
     DoctorDetailResponse updateDoctor(Long clinicId, Long doctorId, DoctorUpdateRequest request, Long staffClinicId);
     DoctorDetailResponse updateDoctorStatus(Long clinicId, Long doctorId, String status, Long staffClinicId);
+    DoctorDetailResponse uploadDoctorAvatar(Long clinicId, Long doctorId, org.springframework.web.multipart.MultipartFile file, Long staffClinicId);
 }
