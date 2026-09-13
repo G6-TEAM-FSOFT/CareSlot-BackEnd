@@ -101,9 +101,10 @@ public class PartnerAppointmentController {
     public ResponseEntity<ApiResponse<List<AppointmentSlotResponse>>> getReplacementSlots(
             @PathVariable Long id,
             @RequestHeader(value = "X-Clinic-Id", required = false) Long headerClinicId,
-            @RequestHeader("X-User-Id") Long currentUserId
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId
     ) {
         Long clinicId = getEffectiveClinicId(headerClinicId);
+        Long currentUserId = getEffectiveUserId(headerUserId);
         appointmentService.getPartnerAppointmentDetail(clinicId, id, clinicId);
         List<AppointmentSlotResponse> result = receptionCheckInService.getReplacementSlots(id, currentUserId);
         return ResponseEntity.ok(ApiResponse.success(result));
@@ -113,10 +114,11 @@ public class PartnerAppointmentController {
     public ResponseEntity<ApiResponse<AppointmentResponse>> reassignAppointment(
             @PathVariable Long id,
             @RequestHeader(value = "X-Clinic-Id", required = false) Long headerClinicId,
-            @RequestHeader("X-User-Id") Long currentUserId,
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
             @Valid @RequestBody ReassignDoctorRequest request
     ) {
         Long clinicId = getEffectiveClinicId(headerClinicId);
+        Long currentUserId = getEffectiveUserId(headerUserId);
         appointmentService.getPartnerAppointmentDetail(clinicId, id, clinicId);
         receptionCheckInService.reassignDoctor(id, request.getReplacementSlotId(), request.getReason(), currentUserId);
         AppointmentResponse result = appointmentService.getPartnerAppointmentDetail(clinicId, id, clinicId);

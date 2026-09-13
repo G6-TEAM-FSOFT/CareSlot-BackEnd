@@ -97,27 +97,79 @@ public class MedicalConsultationServiceImpl implements MedicalConsultationServic
         validateAccessPermission(visit.getPatientProfile(), currentUser);
 
         PatientProfile patient = visit.getPatientProfile();
+        Appointment appointment = visit.getAppointment();
         int age = calculateAge(patient.getDateOfBirth());
+
+        String genderText = "Nam";
+        if ("FEMALE".equalsIgnoreCase(patient.getGender())) genderText = "Nữ";
+        else if (patient.getGender() != null && !patient.getGender().isBlank()) genderText = patient.getGender();
+
+        String statusText = "Đang khám";
+        if ("COMPLETED".equalsIgnoreCase(visit.getStatus())) statusText = "Đã hoàn tất (COMPLETED)";
+        else if ("CANCELLED".equalsIgnoreCase(visit.getStatus())) statusText = "Đã hủy (CANCELLED)";
+        else if ("CHECKED_IN".equalsIgnoreCase(visit.getStatus())) statusText = "Đã Check-in";
+
+        String roomName = "-";
+        if (appointment != null && appointment.getSlot() != null && appointment.getSlot().getRoom() != null) {
+            roomName = appointment.getSlot().getRoom().getName() + " (Phòng " + appointment.getSlot().getRoom().getRoomNumber() + ")";
+        }
+
+        String specialtyName = "-";
+        if (appointment != null && appointment.getSlot() != null && appointment.getSlot().getDoctor() != null 
+                && appointment.getSlot().getDoctor().getSpecialty() != null) {
+            specialtyName = appointment.getSlot().getDoctor().getSpecialty().getName();
+        }
+
+        String timeSlot = "-";
+        String appointmentDateText = "-";
+        if (appointment != null && appointment.getSlot() != null) {
+            if (appointment.getSlot().getStartTime() != null && appointment.getSlot().getEndTime() != null) {
+                timeSlot = appointment.getSlot().getStartTime() + " - " + appointment.getSlot().getEndTime();
+            }
+            if (appointment.getSlot().getAppointmentDate() != null) {
+                appointmentDateText = appointment.getSlot().getAppointmentDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            }
+        }
+
+        String symptom = "Khám sức khỏe tổng quát";
+        if (appointment != null && appointment.getSymptomNote() != null && !appointment.getSymptomNote().isBlank()) {
+            symptom = appointment.getSymptomNote();
+        }
 
         ExaminationPdfDto dto = ExaminationPdfDto.builder()
                 .visitId(visit.getId())
                 .patientId(patient.getId())
-                .visitCode(visit.getVisitCode())
+                .patientCode("PAT-" + String.format("%04d", patient.getId()))
+                .visitCode(visit.getVisitCode() != null ? visit.getVisitCode() : "VIS-" + visit.getId())
+                .bookingCode(appointment != null && appointment.getBookingCode() != null ? appointment.getBookingCode() : "BK-" + visit.getId())
                 .patientName(patient.getFullName())
                 .dateOfBirth(patient.getDateOfBirth())
                 .age(age)
-                .gender(patient.getGender() != null ? patient.getGender() : "MALE")
-                .phone(patient.getPhone())
-                .address(patient.getAddress() != null ? patient.getAddress() : "-")
+                .gender(genderText)
+                .phone(patient.getPhone() != null ? patient.getPhone() : "-")
+                .identityCard(patient.getIdentityCard() != null && !patient.getIdentityCard().isBlank() ? patient.getIdentityCard() : "Chưa cập nhật")
+                .healthInsuranceCode("Chưa cập nhật")
+                .ethnicity(patient.getEthnicity() != null ? patient.getEthnicity() : "Kinh")
+                .nationality(patient.getNationality() != null ? patient.getNationality() : "Việt Nam")
+                .occupation(patient.getOccupation() != null && !patient.getOccupation().isBlank() ? patient.getOccupation() : "Tự do")
+                .address(patient.getAddress() != null && !patient.getAddress().isBlank() ? patient.getAddress() : "Chưa cập nhật")
                 .clinicName(visit.getClinic() != null ? visit.getClinic().getName() : "Phòng khám CareSlot")
-                .departmentName("Khoa Khám bệnh")
+                .clinicAddress(visit.getClinic() != null && visit.getClinic().getAddress() != null ? visit.getClinic().getAddress() : "Hệ thống Y tế CareSlot")
+                .departmentName(specialtyName != null && !"-".equals(specialtyName) ? "Khoa " + specialtyName : "Khoa Khám bệnh")
+                .specialtyName(specialtyName)
+                .roomName(roomName)
                 .doctorName(visit.getPrimaryDoctor() != null ? visit.getPrimaryDoctor().getFullName() : "BS. Chuyên Khoa")
-                .visitDate(visit.getCheckedInAt() != null ? visit.getCheckedInAt() : java.time.LocalDateTime.now())
-                .chiefComplaint("Khám sức khỏe tổng quát")
-                .vitalSignsText("Mạch: 80 lần/phút, Huyết áp: 120/80 mmHg, Thân nhiệt: 36.8°C")
+                .visitDate(visit.getCheckedInAt() != null ? visit.getCheckedInAt() : (visit.getCreatedAt() != null ? visit.getCreatedAt() : java.time.LocalDateTime.now()))
+                .appointmentDateText(appointmentDateText)
+                .timeSlot(timeSlot)
+                .statusText(statusText)
+                .consultationFee(appointment != null ? appointment.getConsultationFee() : java.math.BigDecimal.ZERO)
+                .chiefComplaint(symptom)
+                .symptomNote(symptom)
+                .vitalSignsText("Mạch: 80 lần/phút, Huyết áp: 120/80 mmHg, Thân nhiệt: 36.8°C, SpO2: 98%")
                 .diagnosisText("Khám sức khỏe bình thường, không ghi nhận bất thường nặng")
                 .treatmentPlan("Tái khám theo hẹn hoặc khi có triệu chứng bất thường")
-                .advice("Chế độ ăn uống sinh hoạt lành mạnh, tập thể dục thường xuyên")
+                .advice("Chế độ ăn uống sinh hoạt lành mạnh, giữ gìn sức khỏe")
                 .followUpDate("30 ngày sau")
                 .build();
 
