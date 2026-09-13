@@ -19,10 +19,12 @@ public class AppointmentCreateRequest {
     @Positive
     private Long patientProfileId;
 
-    @NotNull @Positive
+    @NotNull
+    @Positive
     private Long clinicId;
 
-    @NotNull @Positive
+    @NotNull
+    @Positive
     private Long specialtyId;
 
     @NotNull
@@ -37,6 +39,7 @@ public class AppointmentCreateRequest {
     @Size(max = 2000)
     private String symptomNote;
 
-    @NotBlank @Size(max = 80)
+    @NotBlank
+    @Size(max = 80)
     private String requestKey;
 }

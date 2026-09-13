@@ -55,7 +55,7 @@ public class S3ServiceImpl implements S3Service {
         String originalFilename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "image.jpg";
         String extension = getFileExtension(originalFilename).toLowerCase();
 
-        String cleanFolder = (folder == null || folder.trim().isEmpty()) ? "uploads" : folder.trim().replaceAll("^/+|/+$", "");
+        String cleanFolder = (folder == null || folder.trim().isEmpty()) ? "uploads" : folder.trim().split(",")[0].replaceAll("^/+|/+$", "");
         String s3Key = cleanFolder + "/" + UUID.randomUUID() + (extension.isEmpty() ? "" : "." + extension);
 
         String contentType = file.getContentType();
