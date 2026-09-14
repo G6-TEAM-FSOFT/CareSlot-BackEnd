@@ -20,17 +20,39 @@ public class AppointmentEventListener {
     @Async("emailTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleAppointmentEvent(AppointmentEvent event) {
-        if (event == null || event.eventType() != AppointmentEventType.CONFIRMATION) {
+        if (event == null || event.eventType() == null) {
             return;
         }
 
-        log.info("[EVENT] Received AppointmentEvent: CONFIRMATION for appointment id {}", event.appointmentId());
-
-        try {
-            emailService.sendAppointmentConfirmation(event.appointmentId());
-        } catch (Exception e) {
-            log.error("[EVENT] Error processing confirmation email for appointment id {}: {}",
-                    event.appointmentId(), e.getMessage(), e);
+        switch (event.eventType()) {
+            case CONFIRMATION -> {
+                log.info("[EVENT] Received AppointmentEvent: CONFIRMATION for appointment id {}", event.appointmentId());
+                try {
+                    emailService.sendAppointmentConfirmation(event.appointmentId());
+                } catch (Exception e) {
+                    log.error("[EVENT] Error processing confirmation email for appointment id {}: {}",
+                            event.appointmentId(), e.getMessage(), e);
+                }
+            }
+            case CANCELLATION -> {
+                log.info("[EVENT] Received AppointmentEvent: CANCELLATION for appointment id {}", event.appointmentId());
+                try {
+                    emailService.sendAppointmentCancellation(event.appointmentId());
+                } catch (Exception e) {
+                    log.error("[EVENT] Error processing cancellation email for appointment id {}: {}",
+                            event.appointmentId(), e.getMessage(), e);
+                }
+            }
+            case REMINDER -> {
+                log.info("[EVENT] Received AppointmentEvent: REMINDER for appointment id {}", event.appointmentId());
+                try {
+                    emailService.sendAppointmentReminder(event.appointmentId());
+                } catch (Exception e) {
+                    log.error("[EVENT] Error processing reminder email for appointment id {}: {}",
+                            event.appointmentId(), e.getMessage(), e);
+                }
+            }
+            default -> log.debug("[EVENT] Unhandled event type: {}", event.eventType());
         }
     }
 }

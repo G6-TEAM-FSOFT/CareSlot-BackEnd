@@ -11,3 +11,4 @@ ADD CONSTRAINT fk_doctors_user FOREIGN KEY (user_id) REFERENCES users (id) ON DE
 UPDATE doctors SET user_id = 14 WHERE id = 1; -- BS. Trần Hoàng Minh (doctor.minh@careslot.vn)
 UPDATE doctors SET user_id = 16 WHERE id = 11; -- BS. Lê Thị Phương Thảo (doctor.thao@careslot.vn)
 UPDATE doctors SET user_id = 17 WHERE id = 6; -- BS. Nguyễn Hoài Bắc (doctor.bac@careslot.vn)
+UPDATE doctors SET user_id = 19 WHERE id = 2; -- TS.BS Nguyễn Thị Minh Khai (doctor.minhkhai@careslot.vn)

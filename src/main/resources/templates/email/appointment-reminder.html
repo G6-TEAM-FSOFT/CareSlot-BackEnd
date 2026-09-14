@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhắc nhở lịch khám - CareSlot</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+            color: #333333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .header {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #ffffff;
+            padding: 24px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0 0 8px 0;
+            font-size: 22px;
+            font-weight: 600;
+        }
+        .header p {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 24px;
+        }
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .card-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: #0369a1;
+            margin-top: 0;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .badge {
+            display: inline-block;
+            background-color: #e0f2fe;
+            color: #0284c7;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .badge-tag {
+            display: inline-block;
+            background-color: #fef3c7;
+            color: #b45309;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .instructions {
+            background-color: #eff6ff;
+            border-left: 4px solid #0284c7;
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 24px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #1e3a8a;
+        }
+        .btn-container {
+            text-align: center;
+            margin: 25px 0;
+        }
+        .btn {
+            background-color: #0284c7;
+            color: #ffffff !important;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            display: inline-block;
+        }
+        .footer {
+            background-color: #f1f5f9;
+            padding: 16px 24px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>NHẮC NHỞ LỊCH KHÁM SẮP DIỄN RA</h1>
+            <p>Hệ thống đặt lịch khám bệnh trực tuyến CareSlot</p>
+        </div>
+
+        <div class="content">
+            <div class="greeting">
+                Xin chào <strong th:text="${patientName}">Quý khách</strong>,
+                <br>
+                CareSlot xin nhắc bạn về lịch hẹn khám bệnh sắp diễn ra sau khoảng <strong>2 giờ</strong> nữa. Dưới đây là thông tin chi tiết:
+            </div>
+
+            <div class="card">
+                <div class="card-title">THÔNG TIN LỊCH HẸN</div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <tr>
+                        <td style="width: 35%; padding: 5px 0; color: #64748b; font-weight: 600;">Mã lịch hẹn:</td>
+                        <td style="padding: 5px 0;">
+                            <span class="badge" th:text="${bookingCode}">BK123456</span>
+                            <span class="badge-tag" style="margin-left: 6px;">SẮP DIỄN RA</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; color: #64748b; font-weight: 600;">Bệnh nhân:</td>
+                        <td style="padding: 5px 0; font-weight: bold; color: #0f172a;" th:text="${patientName}">Nguyễn Văn A</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; color: #64748b; font-weight: 600;">Số điện thoại:</td>
+                        <td style="padding: 5px 0;" th:text="${patientPhone}">0901234567</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; color: #64748b; font-weight: 600;">Bác sĩ phụ trách:</td>
+                        <td style="padding: 5px 0;" th:text="${doctorTitle + ' ' + doctorName + ' (' + specialtyName + ')'}">BS. Trần B (Nội khoa)</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; color: #64748b; font-weight: 600;">Thời gian khám:</td>
+                        <td style="padding: 5px 0; color: #0284c7; font-weight: bold;" th:text="${startTime + ' - ' + endTime + ', Ngày ' + appointmentDate}">08:00 - 08:30, Ngày 15/10/2026</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; color: #64748b; font-weight: 600;">Phòng khám:</td>
+                        <td style="padding: 5px 0;" th:text="${clinicName}">Phòng khám CareSlot</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; color: #64748b; font-weight: 600;">Phòng số:</td>
+                        <td style="padding: 5px 0;" th:text="${roomName}">Phòng 102</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; color: #64748b; font-weight: 600;">Địa chỉ:</td>
+                        <td style="padding: 5px 0;" th:text="${clinicAddress}">123 Đường ABC, Quận 1, TP.HCM</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="instructions">
+                <strong>Lưu ý trước khi đến khám:</strong>
+                <ul style="margin: 6px 0 0 0; padding-left: 18px;">
+                    <li>Quý khách vui lòng sắp xếp thời gian có mặt trước giờ hẹn ít nhất <strong>10 - 15 phút</strong> để làm thủ tục check-in tại quầy tiếp đón.</li>
+                    <li>Vui lòng chuẩn bị sẵn CCCD/VNeID và cung cấp Mã lịch hẹn <strong><span th:text="${bookingCode}"></span></strong> cho nhân viên y tế.</li>
+                    <li>Hotline hỗ trợ phòng khám: <strong th:text="${clinicPhone}">1900 xxxx</strong>.</li>
+                </ul>
+            </div>
+
+            <div class="btn-container">
+                <a th:href="${detailUrl}" class="btn">Xem chi tiết lịch hẹn</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p style="margin: 0 0 4px 0;">Email này được gửi tự động từ nền tảng y tế <strong>CareSlot</strong>.</p>
+            <p style="margin: 0;">Vui lòng không trả lời trực tiếp email này.</p>
+        </div>
+    </div>
+</body>
+</html>

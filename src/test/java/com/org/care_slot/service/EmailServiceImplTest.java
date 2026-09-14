@@ -7,7 +7,9 @@ import com.org.care_slot.entity.Doctor;
 import com.org.care_slot.entity.PatientProfile;
 import com.org.care_slot.entity.Specialty;
 import com.org.care_slot.entity.User;
+import com.org.care_slot.entity.BookingLog;
 import com.org.care_slot.repository.AppointmentRepository;
+import com.org.care_slot.repository.BookingLogRepository;
 import com.org.care_slot.service.impl.EmailServiceImpl;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
@@ -25,7 +27,10 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -48,6 +53,9 @@ class EmailServiceImplTest {
 
     @Mock
     private AppointmentRepository appointmentRepository;
+
+    @Mock
+    private BookingLogRepository bookingLogRepository;
 
     @InjectMocks
     private EmailServiceImpl emailService;
@@ -151,5 +159,130 @@ class EmailServiceImplTest {
 
         assertDoesNotThrow(() -> emailService.sendAppointmentConfirmation(appointmentId));
         verify(mailSender, times(1)).send(any(MimeMessage.class));
+    }
+
+    @Test
+    @DisplayName("Should successfully send cancellation email when appointment exists and has valid email")
+    void testSendAppointmentCancellation_Success() {
+        sampleAppointment.setCancelledAt(LocalDateTime.of(2026, 9, 14, 14, 30));
+        when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(sampleAppointment));
+        BookingLog cancelLog = BookingLog.builder()
+                .eventType("APPOINTMENT_CANCELLED")
+                .note("Tôi có việc bận đột xuất")
+                .build();
+        when(bookingLogRepository.findByAppointmentIdOrderByCreatedAtAsc(appointmentId))
+                .thenReturn(List.of(cancelLog));
+
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        when(templateEngine.process(eq("email/appointment-cancellation"), any(Context.class)))
+                .thenReturn("<html><body>Cancellation Content</body></html>");
+
+        emailService.sendAppointmentCancellation(appointmentId);
+
+        verify(appointmentRepository, times(1)).findById(appointmentId);
+        verify(bookingLogRepository, times(1)).findByAppointmentIdOrderByCreatedAtAsc(appointmentId);
+        verify(templateEngine, times(1)).process(eq("email/appointment-cancellation"), any(Context.class));
+        verify(mailSender, times(1)).send(any(MimeMessage.class));
+    }
+
+    @Test
+    @DisplayName("Should skip sending cancellation email when appointmentId is null or not found")
+    void testSendAppointmentCancellation_NotFound() {
+        when(appointmentRepository.findById(999L)).thenReturn(Optional.empty());
+
+        emailService.sendAppointmentCancellation(999L);
+        emailService.sendAppointmentCancellation(null);
+
+        verify(mailSender, never()).createMimeMessage();
+        verify(mailSender, never()).send(any(MimeMessage.class));
+    }
+
+    @Test
+    @DisplayName("Should skip sending cancellation email when recipient email is null or blank")
+    void testSendAppointmentCancellation_NoRecipientEmail() {
+        sampleAppointment.getPatientProfile().getUser().setEmail(null);
+        when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(sampleAppointment));
+
+        emailService.sendAppointmentCancellation(appointmentId);
+
+        verify(mailSender, never()).createMimeMessage();
+        verify(mailSender, never()).send(any(MimeMessage.class));
+    }
+
+    @Test
+    @DisplayName("Should catch and isolate SMTP exception without crashing for cancellation email")
+    void testSendAppointmentCancellation_SmtpFailure_ShouldNotThrow() {
+        sampleAppointment.setCancelledAt(LocalDateTime.of(2026, 9, 14, 14, 30));
+        when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(sampleAppointment));
+        when(bookingLogRepository.findByAppointmentIdOrderByCreatedAtAsc(appointmentId))
+                .thenReturn(Collections.emptyList());
+
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        when(templateEngine.process(eq("email/appointment-cancellation"), any(Context.class)))
+                .thenReturn("<html><body>Cancellation Content</body></html>");
+        doThrow(new RuntimeException("SMTP server connection timeout")).when(mailSender).send(any(MimeMessage.class));
+
+        assertDoesNotThrow(() -> emailService.sendAppointmentCancellation(appointmentId));
+        verify(mailSender, times(1)).send(any(MimeMessage.class));
+    }
+
+    @Test
+    @DisplayName("Should successfully send reminder email when appointment exists and has valid email")
+    void testSendAppointmentReminder_Success() {
+        when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(sampleAppointment));
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        when(templateEngine.process(eq("email/appointment-reminder"), any(Context.class)))
+                .thenReturn("<html><body>Reminder Content</body></html>");
+
+        emailService.sendAppointmentReminder(appointmentId);
+
+        verify(appointmentRepository, times(1)).findById(appointmentId);
+        verify(templateEngine, times(1)).process(eq("email/appointment-reminder"), any(Context.class));
+        verify(mailSender, times(1)).send(any(MimeMessage.class));
+        verify(appointmentRepository, never()).resetReminderSent(any());
+    }
+
+    @Test
+    @DisplayName("Should skip sending reminder email when appointmentId is null or not found")
+    void testSendAppointmentReminder_NotFound() {
+        when(appointmentRepository.findById(999L)).thenReturn(Optional.empty());
+
+        emailService.sendAppointmentReminder(999L);
+        emailService.sendAppointmentReminder(null);
+
+        verify(mailSender, never()).createMimeMessage();
+        verify(mailSender, never()).send(any(MimeMessage.class));
+        verify(appointmentRepository, never()).resetReminderSent(any());
+    }
+
+    @Test
+    @DisplayName("Should skip sending reminder email when recipient email is null or blank")
+    void testSendAppointmentReminder_NoRecipientEmail() {
+        sampleAppointment.getPatientProfile().getUser().setEmail(null);
+        when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(sampleAppointment));
+
+        emailService.sendAppointmentReminder(appointmentId);
+
+        verify(mailSender, never()).createMimeMessage();
+        verify(mailSender, never()).send(any(MimeMessage.class));
+        verify(appointmentRepository, never()).resetReminderSent(any());
+    }
+
+    @Test
+    @DisplayName("Should catch and isolate SMTP exception without crashing for reminder email, and reset reminderSentAt for retry")
+    void testSendAppointmentReminder_SmtpFailure_ShouldNotThrow() {
+        when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(sampleAppointment));
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        when(templateEngine.process(eq("email/appointment-reminder"), any(Context.class)))
+                .thenReturn("<html><body>Reminder Content</body></html>");
+        doThrow(new RuntimeException("SMTP server connection timeout")).when(mailSender).send(any(MimeMessage.class));
+
+        assertDoesNotThrow(() -> emailService.sendAppointmentReminder(appointmentId));
+        verify(mailSender, times(1)).send(any(MimeMessage.class));
+        verify(appointmentRepository, times(1)).resetReminderSent(appointmentId);
     }
 }

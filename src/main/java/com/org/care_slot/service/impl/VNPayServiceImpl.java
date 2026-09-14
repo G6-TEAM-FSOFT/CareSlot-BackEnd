@@ -4,6 +4,7 @@ import com.org.care_slot.dto.response.PatientAppointmentResponse;
 import com.org.care_slot.dto.response.VNPayIpnResponse;
 import com.org.care_slot.entity.*;
 import com.org.care_slot.enums.*;
+import com.org.care_slot.event.AppointmentEvent;
 import com.org.care_slot.exception.AppException;
 import com.org.care_slot.exception.ErrorCode;
 import com.org.care_slot.repository.*;
@@ -39,6 +40,7 @@ public class VNPayServiceImpl implements VNPayService {
     private final SlotAllocationService slotAllocationService;
     private final PatientAppointmentMapper patientAppointmentMapper;
     private final EntityManager entityManager;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${vnpay.tmn-code}") private String tmnCode;
     @Value("${vnpay.hash-secret}") private String hashSecret;
@@ -180,6 +182,9 @@ public class VNPayServiceImpl implements VNPayService {
                     confirmed ? "PAYMENT_SUCCESS" : "PAYMENT_REVIEW_REQUIRED",
                     confirmed ? "Thanh toán cọc thành công qua VNPay."
                             : "Đã nhận tiền cọc nhưng lịch hẹn không còn hiệu lực; cần đối soát tại cơ sở.", "SYSTEM");
+            if (confirmed) {
+                eventPublisher.publishEvent(new AppointmentEvent(appointment.getId(), AppointmentEventType.CONFIRMATION));
+            }
         } else {
             // Failed attempts cannot undo a success or release another patient's hold.
             bookingLogService.logEvent(appointment, previous, appointment.getStatus().name(), "PAYMENT_FAILED",
