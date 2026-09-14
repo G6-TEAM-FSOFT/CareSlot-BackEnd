@@ -299,7 +299,13 @@ public class OutpatientWorkflowServiceImpl implements OutpatientWorkflowService 
             if (!hasPermission) {
                 List<Room> assigned = technicianRoomRepository.findRoomsByUserId(user.getId());
                 if (assigned != null && !assigned.isEmpty()) {
-                    throw new AppException("Bạn không được phân công làm việc tại phòng cận lâm sàng này.");
+                    boolean sameDepartment = assigned.stream()
+                            .anyMatch(r -> r.getDepartment() != null 
+                                    && task.getRoom().getDepartment() != null 
+                                    && r.getDepartment().getId().equals(task.getRoom().getDepartment().getId()));
+                    if (!sameDepartment) {
+                        throw new AppException("Bạn không được phân công làm việc tại phòng cận lâm sàng này.");
+                    }
                 }
             }
         }
@@ -542,7 +548,14 @@ public class OutpatientWorkflowServiceImpl implements OutpatientWorkflowService 
                 if (!hasPermission) {
                     List<Room> assigned = technicianRoomRepository.findRoomsByUserId(user.getId());
                     if (assigned != null && !assigned.isEmpty()) {
-                        throw new AppException("Bạn không có quyền truy cập hàng chờ của phòng này.");
+                        Room targetRoom = roomRepository.findById(roomId).orElse(null);
+                        boolean sameDepartment = targetRoom != null && assigned.stream()
+                                .anyMatch(r -> r.getDepartment() != null 
+                                        && targetRoom.getDepartment() != null 
+                                        && r.getDepartment().getId().equals(targetRoom.getDepartment().getId()));
+                        if (!sameDepartment) {
+                            throw new AppException("Bạn không có quyền truy cập hàng chờ của phòng này.");
+                        }
                     }
                 }
             }
@@ -658,7 +671,14 @@ public class OutpatientWorkflowServiceImpl implements OutpatientWorkflowService 
         } else if (user != null && com.org.care_slot.enums.RoleType.TECHNICIAN == user.getRole()) {
             List<Room> techRooms = technicianRoomRepository.findRoomsByUserId(user.getId());
             if (techRooms != null && !techRooms.isEmpty()) {
-                rooms = techRooms;
+                List<Long> deptIds = techRooms.stream()
+                        .map(r -> r.getDepartment() != null ? r.getDepartment().getId() : null)
+                        .filter(java.util.Objects::nonNull)
+                        .collect(Collectors.toList());
+                List<Room> deptRooms = roomRepository.findByClinicId(effectiveClinicId).stream()
+                        .filter(r -> r.getDepartment() != null && deptIds.contains(r.getDepartment().getId()))
+                        .collect(Collectors.toList());
+                rooms = !deptRooms.isEmpty() ? deptRooms : techRooms;
             } else {
                 rooms = roomRepository.findByClinicId(effectiveClinicId).stream()
                         .filter(r -> !"CONSULTATION".equalsIgnoreCase(r.getRoomType()) && !"CASHIER".equalsIgnoreCase(r.getRoomType()))
