@@ -19,6 +19,13 @@ FROM eclipse-temurin:21-jre-alpine AS runner
 
 WORKDIR /app
 
+# Install tzdata and set timezone to Asia/Ho_Chi_Minh
+RUN apk add --no-cache tzdata && \
+    cp /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime && \
+    echo "Asia/Ho_Chi_Minh" > /etc/timezone
+
+ENV TZ="Asia/Ho_Chi_Minh"
+
 # Create non-root user and group for security
 RUN addgroup -S spring && adduser -S spring -G spring
 
@@ -33,6 +40,6 @@ USER spring:spring
 EXPOSE 8080
 
 # Environment options: allow overriding JVM options
-ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75.0"
+ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -Duser.timezone=Asia/Ho_Chi_Minh"
 
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

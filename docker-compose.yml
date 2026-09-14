@@ -61,8 +61,11 @@ services:
       careslot-redis:
         condition: service_healthy
     environment:
+      # Timezone configuration
+      TZ: Asia/Ho_Chi_Minh
+
       # Database connection
-      SPRING_DATASOURCE_URL: jdbc:mysql://careslot-mysql:3306/${DB_NAME:-careslot_db}?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_URL: jdbc:mysql://careslot-mysql:3306/${DB_NAME:-careslot_db}?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-root}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-root}
 
@@ -101,7 +104,7 @@ services:
       AWS_S3_BUCKET: ${AWS_S3_BUCKET:-careslot-images-dev}
 
       # JVM Performance Tuning
-      JAVA_OPTS: "-XX:+UseG1GC -XX:MaxRAMPercentage=75.0"
+      JAVA_OPTS: "-XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -Duser.timezone=Asia/Ho_Chi_Minh"
     networks:
       - careslot-network
 

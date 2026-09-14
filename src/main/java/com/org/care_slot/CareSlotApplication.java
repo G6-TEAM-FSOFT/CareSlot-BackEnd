@@ -1,17 +1,25 @@
 package com.org.care_slot;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.TimeZone;
 
 @SpringBootApplication
 @EnableScheduling
 public class CareSlotApplication {
 
+    @PostConstruct
+    public void init() {
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+    }
+
     public static void main(String[] args) {
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
         loadDotenv();
         SpringApplication.run(CareSlotApplication.class, args);
     }
