@@ -3,6 +3,7 @@ package com.org.care_slot.controller;
 import com.org.care_slot.dto.outpatient.*;
 import com.org.care_slot.dto.response.ApiResponse;
 import com.org.care_slot.dto.response.AppointmentSlotResponse;
+import com.org.care_slot.entity.User;
 import jakarta.validation.Valid;
 import com.org.care_slot.service.OutpatientWorkflowService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,15 +25,18 @@ public class OutpatientWorkflowController {
     private final OutpatientWorkflowService outpatientWorkflowService;
     private final CurrentUserProvider currentUserProvider;
 
-    private Long getEffectiveUserId(Long headerUserId) {
+    private Long getEffectiveUserId(Long headerUserId, Long fallbackUserId) {
         if (headerUserId != null) {
             return headerUserId;
         }
         try {
-            return currentUserProvider.getCurrentUser().getId();
-        } catch (Exception e) {
-            return 1L;
+            User currentUser = currentUserProvider.getCurrentUser();
+            if (currentUser != null && currentUser.getId() != null) {
+                return currentUser.getId();
+            }
+        } catch (Exception ignored) {
         }
+        return fallbackUserId != null ? fallbackUserId : 1L;
     }
 
     @PostMapping("/receptionist/check-in")
@@ -40,7 +44,7 @@ public class OutpatientWorkflowController {
     public ResponseEntity<ApiResponse<VisitDetailResponse>> checkIn(
             @Valid @RequestBody CheckInRequest request,
             @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
-        Long currentUserId = getEffectiveUserId(headerUserId);
+        Long currentUserId = getEffectiveUserId(headerUserId, null);
         VisitDetailResponse response = outpatientWorkflowService.checkIn(request, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Check-in thành công. Đã tạo đợt khám ngoại trú (Visit).", response));
     }
@@ -49,7 +53,7 @@ public class OutpatientWorkflowController {
     public ResponseEntity<ApiResponse<List<AppointmentSlotResponse>>> getReplacementSlots(
             @PathVariable Long appointmentId,
             @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
-        Long currentUserId = getEffectiveUserId(headerUserId);
+        Long currentUserId = getEffectiveUserId(headerUserId, null);
         return ResponseEntity.ok(ApiResponse.success(outpatientWorkflowService.getReplacementSlots(appointmentId, currentUserId)));
     }
 
@@ -57,8 +61,10 @@ public class OutpatientWorkflowController {
     @Operation(summary = "Trợ lý y tế / Điều dưỡng nhập Chỉ số sinh tồn (Vital Signs)")
     public ResponseEntity<ApiResponse<VisitDetailResponse>> recordVitalSigns(
             @RequestBody VitalSignRequest request,
-            @RequestParam(defaultValue = "11") Long currentUserId) {
-        VisitDetailResponse response = outpatientWorkflowService.recordVitalSigns(request, currentUserId);
+            @RequestParam(defaultValue = "11") Long currentUserId,
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
+        Long effectiveUserId = getEffectiveUserId(headerUserId, currentUserId);
+        VisitDetailResponse response = outpatientWorkflowService.recordVitalSigns(request, effectiveUserId);
         return ResponseEntity.ok(ApiResponse.success("Lưu chỉ số sinh tồn thành công", response));
     }
 
@@ -66,8 +72,10 @@ public class OutpatientWorkflowController {
     @Operation(summary = "Trợ lý y tế / Bác sĩ lưu Khám lâm sàng & Bệnh sử draft/final")
     public ResponseEntity<ApiResponse<VisitDetailResponse>> saveClinicalNote(
             @RequestBody ClinicalNoteRequest request,
-            @RequestParam(defaultValue = "11") Long currentUserId) {
-        VisitDetailResponse response = outpatientWorkflowService.saveClinicalNote(request, currentUserId);
+            @RequestParam(defaultValue = "11") Long currentUserId,
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
+        Long effectiveUserId = getEffectiveUserId(headerUserId, currentUserId);
+        VisitDetailResponse response = outpatientWorkflowService.saveClinicalNote(request, effectiveUserId);
         return ResponseEntity.ok(ApiResponse.success("Lưu thông tin lâm sàng thành công", response));
     }
 
@@ -75,8 +83,10 @@ public class OutpatientWorkflowController {
     @Operation(summary = "Bác sĩ chỉ định các Dịch vụ Cận lâm sàng (Clinical Order Round N)")
     public ResponseEntity<ApiResponse<VisitDetailResponse>> createClinicalOrder(
             @RequestBody ClinicalOrderRequest request,
-            @RequestParam(defaultValue = "1") Long currentUserId) {
-        VisitDetailResponse response = outpatientWorkflowService.createClinicalOrder(request, currentUserId);
+            @RequestParam(defaultValue = "1") Long currentUserId,
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
+        Long effectiveUserId = getEffectiveUserId(headerUserId, currentUserId);
+        VisitDetailResponse response = outpatientWorkflowService.createClinicalOrder(request, effectiveUserId);
         return ResponseEntity.ok(ApiResponse.success("Tạo chỉ định cận lâm sàng thành công. Đã sinh hóa đơn dịch vụ.", response));
     }
 
@@ -84,8 +94,10 @@ public class OutpatientWorkflowController {
     @Operation(summary = "Lễ tân / Thu ngân thu tiền Hóa đơn Cận lâm sàng (Kích hoạt Task READY)")
     public ResponseEntity<ApiResponse<VisitDetailResponse>> payInvoice(
             @PathVariable Long invoiceId,
-            @RequestParam(defaultValue = "10") Long currentUserId) {
-        VisitDetailResponse response = outpatientWorkflowService.payInvoice(invoiceId, currentUserId);
+            @RequestParam(defaultValue = "10") Long currentUserId,
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
+        Long effectiveUserId = getEffectiveUserId(headerUserId, currentUserId);
+        VisitDetailResponse response = outpatientWorkflowService.payInvoice(invoiceId, effectiveUserId);
         return ResponseEntity.ok(ApiResponse.success("Thanh toán thành công. Đã mở các task phòng cận lâm sàng.", response));
     }
 
@@ -93,8 +105,10 @@ public class OutpatientWorkflowController {
     @Operation(summary = "Kỹ thuật viên nhập Kết quả Cận lâm sàng & Bấm FINAL (Tự động kích hoạt lượt quay lại Bác sĩ nếu đủ KQ)")
     public ResponseEntity<ApiResponse<VisitDetailResponse>> submitDiagnosticResult(
             @RequestBody SubmitResultRequest request,
-            @RequestParam(defaultValue = "12") Long currentUserId) {
-        VisitDetailResponse response = outpatientWorkflowService.submitDiagnosticResult(request, currentUserId);
+            @RequestParam(required = false) Long currentUserId,
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
+        Long effectiveUserId = getEffectiveUserId(headerUserId, currentUserId != null ? currentUserId : 12L);
+        VisitDetailResponse response = outpatientWorkflowService.submitDiagnosticResult(request, effectiveUserId);
         return ResponseEntity.ok(ApiResponse.success("Nhập kết quả cận lâm sàng thành công", response));
     }
 
@@ -103,10 +117,12 @@ public class OutpatientWorkflowController {
     public ResponseEntity<ApiResponse<VisitDetailResponse>> finalizeVisit(
             @RequestParam Long visitId,
             @RequestBody(required = false) FinalizeVisitWrapper wrapper,
-            @RequestParam(defaultValue = "1") Long currentUserId) {
+            @RequestParam(defaultValue = "1") Long currentUserId,
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
+        Long effectiveUserId = getEffectiveUserId(headerUserId, currentUserId);
         PrescriptionRequest prescReq = wrapper != null ? wrapper.getPrescription() : null;
         VisitDispositionRequest dispReq = wrapper != null ? wrapper.getDisposition() : null;
-        VisitDetailResponse response = outpatientWorkflowService.finalizeVisit(visitId, prescReq, dispReq, currentUserId);
+        VisitDetailResponse response = outpatientWorkflowService.finalizeVisit(visitId, prescReq, dispReq, effectiveUserId);
         return ResponseEntity.ok(ApiResponse.success("Đã hoàn tất đợt khám ngoại trú (Visit COMPLETED)", response));
     }
 
@@ -136,7 +152,7 @@ public class OutpatientWorkflowController {
     public ResponseEntity<ApiResponse<VisitDetailResponse>> startEncounter(
             @PathVariable Long encounterId,
             @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
-        Long currentUserId = getEffectiveUserId(headerUserId);
+        Long currentUserId = getEffectiveUserId(headerUserId, null);
         VisitDetailResponse response = outpatientWorkflowService.startEncounter(encounterId, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Bắt đầu lượt khám thành công (IN_PROGRESS)", response));
     }
@@ -147,7 +163,7 @@ public class OutpatientWorkflowController {
             @RequestParam Long roomId,
             @RequestParam(defaultValue = "WAITING") String status,
             @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
-        Long currentUserId = getEffectiveUserId(headerUserId);
+        Long currentUserId = getEffectiveUserId(headerUserId, null);
         List<VisitDetailResponse.EncounterDto> queue = outpatientWorkflowService.getEncounterQueueByRoom(roomId, status, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách hàng chờ thành công", queue));
     }
@@ -158,7 +174,7 @@ public class OutpatientWorkflowController {
             @RequestParam Long roomId,
             @RequestParam(defaultValue = "READY") String status,
             @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
-        Long currentUserId = getEffectiveUserId(headerUserId);
+        Long currentUserId = getEffectiveUserId(headerUserId, null);
         List<VisitDetailResponse.ServiceRequestDto> queue = outpatientWorkflowService.getTaskQueueByRoom(roomId, status, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách task cận lâm sàng thành công", queue));
     }
@@ -176,7 +192,7 @@ public class OutpatientWorkflowController {
     public ResponseEntity<ApiResponse<List<VisitDetailResponse.RoomDto>>> getRooms(
             @RequestParam(defaultValue = "1") Long clinicId,
             @RequestHeader(value = "X-User-Id", required = false) Long headerUserId) {
-        Long currentUserId = getEffectiveUserId(headerUserId);
+        Long currentUserId = getEffectiveUserId(headerUserId, null);
         List<VisitDetailResponse.RoomDto> rooms = outpatientWorkflowService.getRooms(clinicId, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách phòng thành công", rooms));
     }
