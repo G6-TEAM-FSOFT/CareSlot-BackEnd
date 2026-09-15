@@ -14,7 +14,7 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/careslot_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true}
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root}
+    password: ${DB_PASSWORD:123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -81,4 +81,4 @@ aws:
   access-key: ${AWS_ACCESS_KEY_ID:}
   secret-key: ${AWS_SECRET_ACCESS_KEY:}
   s3:
-    bucket-name: ${AWS_S3_BUCKET:careslot-images-dev}
+    bucket-name: ${AWS_S3_BUCKET:careslot-images-dev}

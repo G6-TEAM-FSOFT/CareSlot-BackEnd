@@ -19,6 +19,9 @@ import com.org.care_slot.service.BookingLogService;
 import com.org.care_slot.service.SlotAllocationService;
 import lombok.RequiredArgsConstructor;
 
+import com.org.care_slot.enums.AppointmentEventType;
+import com.org.care_slot.event.AppointmentEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,6 +46,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final com.org.care_slot.repository.InvoiceRepository invoiceRepository;
     private final BookingLogService bookingLogService;
     private final SlotAllocationService slotAllocationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final BigDecimal DEFAULT_DEPOSIT_AMOUNT = new BigDecimal("100000.00");
 
@@ -210,6 +214,8 @@ public class AppointmentServiceImpl implements AppointmentService {
         // US-24: Log appointment cancellation
         bookingLogService.logEvent(updated, previousStatus, "CANCELLED", "APPOINTMENT_CANCELLED",
                 request != null ? request.getReason() : "Cancelled by patient", "PATIENT");
+
+        eventPublisher.publishEvent(new AppointmentEvent(updated.getId(), AppointmentEventType.CANCELLATION));
 
         return mapToResponse(updated);
     }

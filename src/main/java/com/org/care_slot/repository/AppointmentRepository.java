@@ -5,6 +5,7 @@ import com.org.care_slot.enums.AppointmentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -55,4 +56,21 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     java.util.List<Appointment> findOverdueConfirmedAppointments(@Param("status") AppointmentStatus status,
                                                                  @Param("currentDate") LocalDate currentDate,
                                                                  @Param("currentTime") java.time.LocalTime currentTime);
+
+    @Query("SELECT a FROM Appointment a JOIN FETCH a.slot s " +
+           "WHERE a.status = com.org.care_slot.enums.AppointmentStatus.CONFIRMED " +
+           "AND a.reminderSentAt IS NULL " +
+           "AND (s.appointmentDate = :targetDate OR s.appointmentDate = :nextDate)")
+    java.util.List<Appointment> findCandidatesForReminder(@Param("targetDate") LocalDate targetDate,
+                                                         @Param("nextDate") LocalDate nextDate);
+
+    @Modifying
+    @Query("UPDATE Appointment a SET a.reminderSentAt = :sentAt " +
+           "WHERE a.id = :id AND a.reminderSentAt IS NULL AND a.status = com.org.care_slot.enums.AppointmentStatus.CONFIRMED")
+    int markReminderSent(@Param("id") Long id, @Param("sentAt") java.time.LocalDateTime sentAt);
+
+    @org.springframework.transaction.annotation.Transactional
+    @Modifying
+    @Query("UPDATE Appointment a SET a.reminderSentAt = NULL WHERE a.id = :id")
+    int resetReminderSent(@Param("id") Long id);
 }

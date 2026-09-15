@@ -67,4 +67,7 @@ public class Appointment extends BaseEntity {
 
     @Column(name = "checked_in_at")
     private LocalDateTime checkedInAt;
+
+    @Column(name = "reminder_sent_at")
+    private LocalDateTime reminderSentAt;
 }

@@ -5,7 +5,9 @@ import com.org.care_slot.entity.AppointmentSlot;
 import com.org.care_slot.entity.Clinic;
 import com.org.care_slot.entity.Doctor;
 import com.org.care_slot.entity.PatientProfile;
+import com.org.care_slot.entity.BookingLog;
 import com.org.care_slot.repository.AppointmentRepository;
+import com.org.care_slot.repository.BookingLogRepository;
 import com.org.care_slot.service.EmailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -23,6 +25,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
 
 @Service
@@ -33,6 +36,7 @@ public class EmailServiceImpl implements EmailService {
     private final JavaMailSender mailSender;
     private final SpringTemplateEngine templateEngine;
     private final AppointmentRepository appointmentRepository;
+    private final BookingLogRepository bookingLogRepository;
 
     @Value("${spring.mail.username:no-reply@careslot.com}")
     private String fromEmail;
@@ -42,6 +46,7 @@ public class EmailServiceImpl implements EmailService {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
 
     @Override
     @Transactional(readOnly = true)
@@ -78,6 +83,114 @@ public class EmailServiceImpl implements EmailService {
             log.error("[EMAIL] Failed to send confirmation email for booking {}: {}", appointment.getBookingCode(),
                     e.getMessage(), e);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void sendAppointmentCancellation(Long appointmentId) {
+        if (appointmentId == null) {
+            log.warn("[EMAIL] Skip cancellation email: appointmentId is null");
+            return;
+        }
+
+        Appointment appointment = appointmentRepository.findById(appointmentId).orElse(null);
+        if (appointment == null) {
+            log.warn("[EMAIL] Skip cancellation email: Appointment not found with id {}", appointmentId);
+            return;
+        }
+
+        String recipientEmail = getRecipientEmail(appointment);
+        if (recipientEmail == null || recipientEmail.isBlank()) {
+            log.warn("[EMAIL] Skip cancellation email: No recipient email found for booking {}",
+                    appointment.getBookingCode());
+            return;
+        }
+
+        try {
+            Context context = buildBaseContext(appointment);
+
+            String cancelledAtStr = appointment.getCancelledAt() != null
+                    ? appointment.getCancelledAt().format(DATE_TIME_FORMATTER)
+                    : "N/A";
+            context.setVariable("cancelledAt", cancelledAtStr);
+
+            String reason = resolveCancellationReason(appointmentId);
+            context.setVariable("cancellationReason", reason);
+
+            String htmlContent = templateEngine.process("email/appointment-cancellation", context);
+
+            sendHtmlEmail(
+                    recipientEmail,
+                    "[" + appointment.getBookingCode() + "] Thông báo hủy lịch khám thành công - CareSlot",
+                    htmlContent);
+            log.info("[EMAIL] Successfully sent cancellation email to {} for booking {}", recipientEmail,
+                    appointment.getBookingCode());
+        } catch (Exception e) {
+            log.error("[EMAIL] Failed to send cancellation email for booking {}: {}", appointment.getBookingCode(),
+                    e.getMessage(), e);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void sendAppointmentReminder(Long appointmentId) {
+        if (appointmentId == null) {
+            log.warn("[EMAIL] Skip reminder email: appointmentId is null");
+            return;
+        }
+
+        Appointment appointment = appointmentRepository.findById(appointmentId).orElse(null);
+        if (appointment == null) {
+            log.warn("[EMAIL] Skip reminder email: Appointment not found with id {}", appointmentId);
+            return;
+        }
+
+        String recipientEmail = getRecipientEmail(appointment);
+        if (recipientEmail == null || recipientEmail.isBlank()) {
+            log.warn("[EMAIL] Skip reminder email: No recipient email found for booking {}",
+                    appointment.getBookingCode());
+            return;
+        }
+
+        try {
+            Context context = buildBaseContext(appointment);
+            String htmlContent = templateEngine.process("email/appointment-reminder", context);
+
+            sendHtmlEmail(
+                    recipientEmail,
+                    "[" + appointment.getBookingCode() + "] Nhắc nhở lịch khám sắp diễn ra - CareSlot",
+                    htmlContent);
+            log.info("[EMAIL] Successfully sent reminder email to {} for booking {}", recipientEmail,
+                    appointment.getBookingCode());
+        } catch (Exception e) {
+            log.error("[EMAIL] Failed to send reminder email for booking {}: {}", appointment.getBookingCode(),
+                    e.getMessage(), e);
+            try {
+                appointmentRepository.resetReminderSent(appointmentId);
+                log.info("[EMAIL] Reset reminderSentAt for appointment id {} to allow scheduler retry", appointmentId);
+            } catch (Exception resetEx) {
+                log.error("[EMAIL] Failed to reset reminderSentAt for appointment id {}: {}", appointmentId,
+                        resetEx.getMessage(), resetEx);
+            }
+        }
+    }
+
+    private String resolveCancellationReason(Long appointmentId) {
+        try {
+            List<BookingLog> logs = bookingLogRepository.findByAppointmentIdOrderByCreatedAtAsc(appointmentId);
+            if (logs != null && !logs.isEmpty()) {
+                for (int i = logs.size() - 1; i >= 0; i--) {
+                    BookingLog log = logs.get(i);
+                    if ("APPOINTMENT_CANCELLED".equals(log.getEventType())
+                            && log.getNote() != null && !log.getNote().isBlank()) {
+                        return log.getNote();
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            log.warn("[EMAIL] Could not retrieve cancellation reason for appointment {}: {}", appointmentId, ex.getMessage());
+        }
+        return "Hủy theo yêu cầu của quý khách";
     }
 
     private void sendHtmlEmail(String to, String subject, String htmlBody) throws MessagingException {
