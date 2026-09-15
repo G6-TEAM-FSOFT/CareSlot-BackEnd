@@ -5,8 +5,6 @@ import com.org.care_slot.dto.request.PatientProfileUpdateRequest;
 import com.org.care_slot.dto.request.UpdatePrimaryProfileRequest;
 import com.org.care_slot.dto.response.ApiResponse;
 import com.org.care_slot.dto.response.PatientProfileResponse;
-import com.org.care_slot.exception.AppException;
-import com.org.care_slot.exception.ErrorCode;
 import com.org.care_slot.security.CurrentUserProvider;
 import com.org.care_slot.service.PatientProfileService;
 import jakarta.validation.Valid;
