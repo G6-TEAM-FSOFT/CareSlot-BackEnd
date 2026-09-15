@@ -69,6 +69,14 @@ public interface AppointmentSlotRepository extends JpaRepository<AppointmentSlot
                      @Param("startTime") LocalTime startTime,
                      @Param("endTime") LocalTime endTime);
 
+       @Query("SELECT COUNT(s) > 0 FROM AppointmentSlot s WHERE s.room.id = :roomId " +
+                     "AND s.appointmentDate = :date " +
+                     "AND s.startTime < :endTime AND s.endTime > :startTime")
+       boolean existsOverlappingRoomSlot(@Param("roomId") Long roomId,
+                     @Param("date") LocalDate date,
+                     @Param("startTime") LocalTime startTime,
+                     @Param("endTime") LocalTime endTime);
+
        List<AppointmentSlot> findByStatusAndHoldExpiresAtBefore(SlotStatus status, java.time.LocalDateTime dateTime);
 
        @Query("SELECT s FROM AppointmentSlot s WHERE " +
@@ -103,4 +111,7 @@ public interface AppointmentSlotRepository extends JpaRepository<AppointmentSlot
 
        @Query("SELECT DISTINCT s.room FROM AppointmentSlot s WHERE s.doctor.id = :doctorId AND s.room IS NOT NULL")
        List<com.org.care_slot.entity.Room> findRoomsByDoctorId(@Param("doctorId") Long doctorId);
+
+       @Query("SELECT s.room.id, s.status, COUNT(s) FROM AppointmentSlot s WHERE s.room IS NOT NULL AND s.doctor.clinic.id = :clinicId GROUP BY s.room.id, s.status")
+       List<Object[]> countSlotsByRoomAndStatusForClinic(@Param("clinicId") Long clinicId);
 }

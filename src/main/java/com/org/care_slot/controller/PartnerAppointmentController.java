@@ -65,13 +65,16 @@ public class PartnerAppointmentController {
             @RequestHeader(value = "X-Clinic-Id", required = false) Long headerClinicId,
             @RequestParam(required = false) AppointmentStatus status,
             @RequestParam(required = false) Long doctorId,
+            @RequestParam(required = false) Long roomId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "100") int size
     ) {
         Long clinicId = getEffectiveClinicId(headerClinicId);
         Pageable pageable = PageRequest.of(page, size);
-        PageResponse<AppointmentResponse> result = appointmentService.getClinicAppointments(clinicId, status, doctorId, date, pageable, clinicId);
+        PageResponse<AppointmentResponse> result = appointmentService.getClinicAppointments(clinicId, status, doctorId, roomId, date, fromDate, toDate, pageable, clinicId);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 

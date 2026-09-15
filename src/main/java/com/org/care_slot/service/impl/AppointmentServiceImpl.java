@@ -223,12 +223,12 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<AppointmentResponse> getClinicAppointments(Long clinicId, AppointmentStatus status,
-            Long doctorId, LocalDate date, Pageable pageable, Long staffClinicId) {
+            Long doctorId, Long roomId, LocalDate date, LocalDate fromDate, LocalDate toDate, Pageable pageable, Long staffClinicId) {
         if (staffClinicId == null || !staffClinicId.equals(clinicId)) {
             throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
         }
 
-        Page<Appointment> page = appointmentRepository.findClinicAppointments(clinicId, status, doctorId, date,
+        Page<Appointment> page = appointmentRepository.findClinicAppointments(clinicId, status, doctorId, roomId, date, fromDate, toDate,
                 pageable);
         List<AppointmentResponse> content = page.getContent().stream()
                 .map(this::mapToStaffResponse)

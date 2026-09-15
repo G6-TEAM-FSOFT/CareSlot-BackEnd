@@ -25,11 +25,25 @@ public class CareSlotApplication {
     }
 
     private static void loadDotenv() {
-        File envFile = new File(".env");
-        if (!envFile.exists()) {
-            envFile = new File("CareSlot-BackEnd/.env");
+        String[] possiblePaths = {
+            ".env",
+            "BE/care-slot/.env",
+            "care-slot/.env",
+            "CareSlot-BackEnd/.env",
+            "../.env",
+            "../BE/care-slot/.env"
+        };
+
+        File envFile = null;
+        for (String path : possiblePaths) {
+            File candidate = new File(path);
+            if (candidate.exists() && candidate.isFile()) {
+                envFile = candidate;
+                break;
+            }
         }
-        if (envFile.exists()) {
+
+        if (envFile != null && envFile.exists()) {
             try {
                 Files.readAllLines(envFile.toPath()).forEach(line -> {
                     line = line.trim();
@@ -37,7 +51,11 @@ public class CareSlotApplication {
                         int idx = line.indexOf('=');
                         String key = line.substring(0, idx).trim();
                         String val = line.substring(idx + 1).trim();
-                        System.setProperty(key, val);
+                        val = val.replaceAll("^[\"']|[\"']$", "");
+
+                        if (System.getProperty(key) == null) {
+                            System.setProperty(key, val);
+                        }
                         if ("SPRING_MAIL_USERNAME".equals(key)) {
                             System.setProperty("MAIL_USERNAME", val);
                         }

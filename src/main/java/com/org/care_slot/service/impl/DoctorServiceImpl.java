@@ -6,15 +6,20 @@ import com.org.care_slot.dto.response.*;
 import com.org.care_slot.entity.Clinic;
 import com.org.care_slot.entity.Doctor;
 import com.org.care_slot.entity.Specialty;
+import com.org.care_slot.entity.User;
+import com.org.care_slot.enums.RoleType;
 import com.org.care_slot.exception.AppException;
 import com.org.care_slot.exception.ErrorCode;
 import com.org.care_slot.repository.ClinicRepository;
 import com.org.care_slot.repository.DoctorRepository;
 import com.org.care_slot.repository.SpecialtyRepository;
+import com.org.care_slot.repository.UserRepository;
 import com.org.care_slot.service.DoctorService;
+import com.org.care_slot.service.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +34,9 @@ public class DoctorServiceImpl implements DoctorService {
     private final DoctorRepository doctorRepository;
     private final ClinicRepository clinicRepository;
     private final SpecialtyRepository specialtyRepository;
-    private final com.org.care_slot.service.S3Service s3Service;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final S3Service s3Service;
 
     @Override
     public PageResponse<DoctorResponse> filterDoctors(Long specialtyId, Long clinicId, String keyword, BigDecimal minFee, BigDecimal maxFee, Pageable pageable) {
@@ -163,9 +170,31 @@ public class DoctorServiceImpl implements DoctorService {
             throw new AppException(ErrorCode.SPECIALTY_NOT_BELONG_TO_CLINIC);
         }
 
+        String rawEmail = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : null;
+        if (rawEmail != null && userRepository.findByEmail(rawEmail).isPresent()) {
+            throw new AppException(ErrorCode.USER_ALREADY_EXISTS);
+        }
+
+        String rawPassword = request.getPassword() != null && !request.getPassword().isBlank()
+                ? request.getPassword()
+                : "123456";
+
+        User doctorUser = User.builder()
+                .email(rawEmail)
+                .passwordHash(passwordEncoder.encode(rawPassword))
+                .fullName(request.getFullName().trim())
+                .phone(request.getPhone() != null ? request.getPhone().trim() : null)
+                .role(RoleType.DOCTOR)
+                .clinic(clinic)
+                .status("ACTIVE")
+                .build();
+
+        User savedUser = userRepository.save(doctorUser);
+
         Doctor doctor = Doctor.builder()
                 .clinic(clinic)
                 .specialty(specialty)
+                .user(savedUser)
                 .fullName(request.getFullName())
                 .title(request.getTitle())
                 .bio(request.getBio())
@@ -264,7 +293,7 @@ public class DoctorServiceImpl implements DoctorService {
         }
 
         String oldAvatar = doctor.getAvatarUrl();
-        com.org.care_slot.dto.response.FileUploadResponse uploadResponse = s3Service.uploadImage(file, "doctors");
+        FileUploadResponse uploadResponse = s3Service.uploadImage(file, "doctors");
 
         doctor.setAvatarUrl(uploadResponse.getUrl());
         Doctor updated = doctorRepository.save(doctor);
