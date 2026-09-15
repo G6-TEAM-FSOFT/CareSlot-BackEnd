@@ -45,7 +45,7 @@ public class PartnerDoctorController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "100") int size
     ) {
         Long clinicId = getEffectiveClinicId(headerClinicId);
         Pageable pageable = PageRequest.of(page, size);

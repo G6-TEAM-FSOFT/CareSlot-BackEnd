@@ -82,7 +82,7 @@ public class AuthServiceImpl implements AuthService {
         authSessionRepository.save(session);
 
         setCookie(httpResponse, jwtProperties.getCookieAccessTokenName(), accessToken, jwtProperties.getAccessTokenExpirationMs() / 1000, "/api/v1");
-        setCookie(httpResponse, jwtProperties.getCookieRefreshTokenName(), refreshToken, jwtProperties.getRefreshTokenExpirationMs() / 1000, "/api/v1/auth");
+        setCookie(httpResponse, jwtProperties.getCookieRefreshTokenName(), refreshToken, jwtProperties.getRefreshTokenExpirationMs() / 1000, "/api/v1");
 
         return buildAuthResponse(user);
     }
@@ -146,10 +146,12 @@ public class AuthServiceImpl implements AuthService {
         authSessionRepository.save(session);
 
         setCookie(httpResponse, jwtProperties.getCookieAccessTokenName(), accessToken, jwtProperties.getAccessTokenExpirationMs() / 1000, "/api/v1");
-        setCookie(httpResponse, jwtProperties.getCookieRefreshTokenName(), refreshToken, jwtProperties.getRefreshTokenExpirationMs() / 1000, "/api/v1/auth");
+        setCookie(httpResponse, jwtProperties.getCookieRefreshTokenName(), refreshToken, jwtProperties.getRefreshTokenExpirationMs() / 1000, "/api/v1");
 
         return buildAuthResponse(savedUser);
     }
+
+    @Override
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = extractCookieValue(request, jwtProperties.getCookieRefreshTokenName());
         if (refreshToken == null || !jwtTokenProvider.validateToken(refreshToken)) {
@@ -174,7 +176,6 @@ public class AuthServiceImpl implements AuthService {
         AuthSession session = sessionOpt.get();
 
         if (session.getIsRevoked()) {
-            // Check rotation grace period (e.g. 10s)
             LocalDateTime graceCutoff = session.getRevokedAt() != null ? session.getRevokedAt().plusSeconds(jwtProperties.getRotationGracePeriodSeconds()) : LocalDateTime.now();
             if (LocalDateTime.now().isAfter(graceCutoff)) {
                 log.warn("Refresh token reuse detected for familyId: {}. Revoking all sessions in family!", session.getTokenFamilyId());
@@ -183,6 +184,24 @@ public class AuthServiceImpl implements AuthService {
                 authSessionRepository.saveAll(familySessions);
                 clearAuthCookies(response);
                 throw new AppException(ErrorCode.UNAUTHORIZED);
+            }
+
+            // Within grace period: re-issue active access token if an unrevoked session exists in the family
+            List<AuthSession> familySessions = authSessionRepository.findByTokenFamilyId(session.getTokenFamilyId());
+            Optional<AuthSession> activeSessionOpt = familySessions.stream()
+                    .filter(s -> !s.getIsRevoked() && s.getExpiresAt().isAfter(LocalDateTime.now()))
+                    .findFirst();
+            if (activeSessionOpt.isPresent()) {
+                AuthSession activeSession = activeSessionOpt.get();
+                User user = activeSession.getUser();
+                if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+                    clearAuthCookies(response);
+                    throw new AppException(ErrorCode.UNAUTHORIZED);
+                }
+                String newAccessJti = UUID.randomUUID().toString();
+                String newAccessToken = jwtTokenProvider.generateAccessToken(user, newAccessJti);
+                setCookie(response, jwtProperties.getCookieAccessTokenName(), newAccessToken, jwtProperties.getAccessTokenExpirationMs() / 1000, "/api/v1");
+                return;
             }
         }
 
@@ -219,7 +238,7 @@ public class AuthServiceImpl implements AuthService {
         authSessionRepository.save(newSession);
 
         setCookie(response, jwtProperties.getCookieAccessTokenName(), newAccessToken, jwtProperties.getAccessTokenExpirationMs() / 1000, "/api/v1");
-        setCookie(response, jwtProperties.getCookieRefreshTokenName(), newRefreshToken, jwtProperties.getRefreshTokenExpirationMs() / 1000, "/api/v1/auth");
+        setCookie(response, jwtProperties.getCookieRefreshTokenName(), newRefreshToken, jwtProperties.getRefreshTokenExpirationMs() / 1000, "/api/v1");
     }
 
     @Override
@@ -294,7 +313,7 @@ public class AuthServiceImpl implements AuthService {
 
     private void clearAuthCookies(HttpServletResponse response) {
         setCookie(response, jwtProperties.getCookieAccessTokenName(), "", 0, "/api/v1");
-        setCookie(response, jwtProperties.getCookieRefreshTokenName(), "", 0, "/api/v1/auth");
+        setCookie(response, jwtProperties.getCookieRefreshTokenName(), "", 0, "/api/v1");
     }
 
     private String extractCookieValue(HttpServletRequest request, String cookieName) {

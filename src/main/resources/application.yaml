@@ -14,7 +14,7 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/careslot_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true}
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:123456}
+    password: ${DB_PASSWORD:meomeo5104}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -58,10 +58,13 @@ app:
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
   jwt:
     secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
-    access-token-expiration-ms: ${JWT_EXPIRATION:86400000}
-    refresh-token-expiration-ms: ${JWT_REFRESH_EXPIRATION:1209600000}
-    secure-cookie: ${COOKIE_SECURE:false}
-    same-site: ${COOKIE_SAME_SITE:Lax}
+    access-token-expiration-ms: 3600000 # 1 hour
+    refresh-token-expiration-ms: 1209600000 # 14 days
+    cookie-access-token-name: ACCESS_TOKEN
+    cookie-refresh-token-name: REFRESH_TOKEN
+    secure-cookie: false
+    same-site: Lax
+    rotation-grace-period-seconds: 15
 
 vnpay:
   tmn-code: ${VNPAY_TMN_CODE:AS09APAU}
@@ -78,7 +81,7 @@ gemini:
 
 aws:
   region: ${AWS_REGION:ap-southeast-2}
-  access-key: ${AWS_ACCESS_KEY_ID:}
-  secret-key: ${AWS_SECRET_ACCESS_KEY:}
+  access-key: ${AWS_ACCESS_KEY_ID:dummy-access-key}
+  secret-key: ${AWS_SECRET_ACCESS_KEY:dummy-secret-key}
   s3:
     bucket-name: ${AWS_S3_BUCKET:careslot-images-dev}

@@ -6,11 +6,13 @@ import com.org.care_slot.dto.response.AppointmentSlotResponse;
 import com.org.care_slot.dto.response.ExcelImportResultResponse;
 import com.org.care_slot.entity.AppointmentSlot;
 import com.org.care_slot.entity.Doctor;
+import com.org.care_slot.entity.Room;
 import com.org.care_slot.enums.SlotStatus;
 import com.org.care_slot.exception.AppException;
 import com.org.care_slot.exception.ErrorCode;
 import com.org.care_slot.repository.AppointmentSlotRepository;
 import com.org.care_slot.repository.DoctorRepository;
+import com.org.care_slot.repository.RoomRepository;
 import com.org.care_slot.service.AppointmentSlotService;
 import com.org.care_slot.util.ExcelHelper;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ public class AppointmentSlotServiceImpl implements AppointmentSlotService {
 
     private final AppointmentSlotRepository appointmentSlotRepository;
     private final DoctorRepository doctorRepository;
+    private final RoomRepository roomRepository;
 
     @Override
     public List<AppointmentSlotResponse> getDoctorSlots(Long doctorId, LocalDate date, LocalDate fromDate, LocalDate toDate, SlotStatus status) {
@@ -143,12 +146,50 @@ public class AppointmentSlotServiceImpl implements AppointmentSlotService {
             throw new AppException(ErrorCode.SLOT_TIME_OVERLAP);
         }
 
+        Room room = null;
+        if (request.getRoomId() != null) {
+            room = roomRepository.findById(request.getRoomId())
+                    .orElse(null);
+            if (room != null && !room.getClinic().getId().equals(clinicId)) {
+                throw new AppException(ErrorCode.FORBIDDEN_CLINIC_ACCESS);
+            }
+        }
+
+        if (room == null && (request.getRoomNumber() != null || request.getRoomName() != null)) {
+            List<Room> clinicRooms = roomRepository.findByClinicId(clinicId);
+            String searchNum = request.getRoomNumber() != null ? request.getRoomNumber().trim() : null;
+            String searchName = request.getRoomName() != null ? request.getRoomName().trim() : null;
+
+            room = clinicRooms.stream()
+                    .filter(r -> (searchNum != null && r.getRoomNumber().equalsIgnoreCase(searchNum)) ||
+                            (searchName != null && (r.getName().equalsIgnoreCase(searchName) || searchName.contains(r.getRoomNumber()))))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        String finalRoomName = room != null
+                ? room.getName() + " (Phòng " + room.getRoomNumber() + ")"
+                : (request.getRoomName() != null ? request.getRoomName() : null);
+
+        if (room != null) {
+            boolean roomOverlap = appointmentSlotRepository.existsOverlappingRoomSlot(
+                    room.getId(),
+                    request.getAppointmentDate(),
+                    request.getStartTime(),
+                    request.getEndTime()
+            );
+            if (roomOverlap) {
+                throw new AppException(ErrorCode.ROOM_TIME_OVERLAP);
+            }
+        }
+
         AppointmentSlot slot = AppointmentSlot.builder()
                 .doctor(doctor)
                 .appointmentDate(request.getAppointmentDate())
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
-                .roomName(request.getRoomName())
+                .room(room)
+                .roomName(finalRoomName)
                 .status(SlotStatus.AVAILABLE)
                 .build();
 
@@ -156,6 +197,12 @@ public class AppointmentSlotServiceImpl implements AppointmentSlotService {
     }
 
     private AppointmentSlotResponse mapToSlotResponse(AppointmentSlot slot) {
+        Long roomId = slot.getRoom() != null ? slot.getRoom().getId() : null;
+        String roomNumber = slot.getRoom() != null ? slot.getRoom().getRoomNumber() : null;
+        String roomName = slot.getRoom() != null
+                ? slot.getRoom().getName() + " (Phòng " + slot.getRoom().getRoomNumber() + ")"
+                : slot.getRoomName();
+
         return AppointmentSlotResponse.builder()
                 .id(slot.getId())
                 .doctorId(slot.getDoctor() != null ? slot.getDoctor().getId() : null)
@@ -163,7 +210,9 @@ public class AppointmentSlotServiceImpl implements AppointmentSlotService {
                 .appointmentDate(slot.getAppointmentDate())
                 .startTime(slot.getStartTime())
                 .endTime(slot.getEndTime())
-                .roomName(slot.getRoomName())
+                .roomId(roomId)
+                .roomNumber(roomNumber)
+                .roomName(roomName)
                 .status(slot.getStatus())
                 .build();
     }

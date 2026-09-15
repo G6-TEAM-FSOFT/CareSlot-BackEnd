@@ -1,12 +1,15 @@
 package com.org.care_slot.controller;
 
+import com.org.care_slot.dto.outpatient.VisitDetailResponse;
 import com.org.care_slot.dto.request.ClinicUpdateRequest;
 import com.org.care_slot.dto.response.ApiResponse;
 import com.org.care_slot.dto.response.ClinicDetailResponse;
 import com.org.care_slot.dto.response.SpecialtyResponse;
+import com.org.care_slot.entity.User;
 import com.org.care_slot.exception.AppException;
 import com.org.care_slot.exception.ErrorCode;
 import com.org.care_slot.service.ClinicService;
+import com.org.care_slot.service.OutpatientWorkflowService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +25,7 @@ import com.org.care_slot.security.CurrentUserProvider;
 public class PartnerClinicController {
 
     private final ClinicService clinicService;
+    private final OutpatientWorkflowService outpatientWorkflowService;
     private final CurrentUserProvider currentUserProvider;
 
     private Long getEffectiveClinicId(Long headerClinicId) {
@@ -92,5 +96,21 @@ public class PartnerClinicController {
         Long clinicId = getEffectiveClinicId(headerClinicId);
         ClinicDetailResponse result = clinicService.removeSpecialtyFromClinic(clinicId, specialtyId, clinicId);
         return ResponseEntity.ok(ApiResponse.success("Removed specialty from clinic successfully", result));
+    }
+
+    @GetMapping("/rooms")
+    public ResponseEntity<ApiResponse<List<VisitDetailResponse.RoomDto>>> getMyClinicRooms(
+            @RequestHeader(value = "X-Clinic-Id", required = false) Long headerClinicId
+    ) {
+        Long clinicId = getEffectiveClinicId(headerClinicId);
+        Long currentUserId = null;
+        try {
+            User user = currentUserProvider.getCurrentUser();
+            if (user != null) {
+                currentUserId = user.getId();
+            }
+        } catch (Exception ignored) {}
+        List<VisitDetailResponse.RoomDto> result = outpatientWorkflowService.getRooms(clinicId, currentUserId);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 }

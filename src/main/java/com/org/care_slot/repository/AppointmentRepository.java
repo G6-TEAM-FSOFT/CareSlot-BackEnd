@@ -41,12 +41,18 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             "a.slot.doctor.clinic.id = :clinicId AND " +
             "(:status IS NULL OR a.status = :status) AND " +
             "(:doctorId IS NULL OR a.slot.doctor.id = :doctorId) AND " +
-            "(:date IS NULL OR a.slot.appointmentDate = :date) " +
-            "ORDER BY a.createdAt DESC")
+            "(:roomId IS NULL OR a.slot.room.id = :roomId) AND " +
+            "(:date IS NULL OR a.slot.appointmentDate = :date) AND " +
+            "(:fromDate IS NULL OR a.slot.appointmentDate >= :fromDate) AND " +
+            "(:toDate IS NULL OR a.slot.appointmentDate <= :toDate) " +
+            "ORDER BY a.slot.appointmentDate DESC, a.slot.startTime DESC")
     Page<Appointment> findClinicAppointments(@Param("clinicId") Long clinicId,
             @Param("status") AppointmentStatus status,
             @Param("doctorId") Long doctorId,
+            @Param("roomId") Long roomId,
             @Param("date") LocalDate date,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate,
             Pageable pageable);
 
     Optional<Appointment> findBySlotIdAndStatus(Long slotId, AppointmentStatus status);

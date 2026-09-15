@@ -16,7 +16,7 @@ public interface AppointmentService {
     AppointmentResponse getAppointmentByBookingCode(String bookingCode, Long userId);
     AppointmentResponse cancelAppointment(Long id, Long userId, AppointmentCancelRequest request);
 
-    PageResponse<AppointmentResponse> getClinicAppointments(Long clinicId, AppointmentStatus status, Long doctorId, LocalDate date, Pageable pageable, Long staffClinicId);
+    PageResponse<AppointmentResponse> getClinicAppointments(Long clinicId, AppointmentStatus status, Long doctorId, Long roomId, LocalDate date, LocalDate fromDate, LocalDate toDate, Pageable pageable, Long staffClinicId);
     AppointmentResponse getPartnerAppointmentDetail(Long clinicId, Long appointmentId, Long staffClinicId);
     AppointmentResponse checkInAppointment(Long clinicId, Long appointmentId, Long staffClinicId);
 }
